@@ -17,6 +17,7 @@ data RawImp : Type where
      Implicit : RawImp
      IType : RawImp
 
+
 public export
 data ImpTy : Type where
      MkImpTy : (n : Name) -> (ty : RawImp) -> ImpTy

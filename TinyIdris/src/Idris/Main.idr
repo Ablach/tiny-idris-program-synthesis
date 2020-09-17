@@ -34,9 +34,20 @@ runAuto s =
   do let Right ttexp = runParser Nothing s (expr "(input)" init)
          | Left err => do coreLift $ printLn err
                           repl 
-     
-     (tm , glued)  <- checkTerm [] ttexp Nothing
-     ?fdf
+     case ttexp of 
+        IVar name => do defs <- get Ctxt
+                        Just d <- lookupDef name defs
+                          | Nothing => do coreLift $ putStrLn "Provided name not in context."
+                                          repl
+                        case definition d of  
+                          None => do ?call_synth 
+                                     repl
+                          Hole => do ?call_synth_1
+                                     repl
+                          otherwise => do coreLift $ putStrLn "Definition exists; nothing to do"
+                                          repl
+        otherwise => do coreLift $ putStrLn "Expression is not a name." 
+                        repl     
 
 repl = do coreLift $ putStr "> "
           inp <- coreLift getLine

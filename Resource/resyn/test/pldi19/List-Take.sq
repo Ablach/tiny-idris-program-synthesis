@@ -1,0 +1,24 @@
+qualifier {x <= y, x != y}
+
+type Nat = {Int | _v >= 0}
+
+zero :: {Int | _v == 0}
+inc :: x:Int -> {Int | _v == x + 1}
+dec :: x:Int -> {Int | _v == x - 1}
+
+data List a where
+	Nil :: List a
+	Cons :: x: a -> xs: List a -> List a
+  
+termination measure len :: List a -> {Int | _v >= 0} where
+  Nil -> 0
+  Cons x xs -> 1 + len xs  
+	
+take :: n: Nat -> xs: {List a | len _v >= n | n} -[1]-> {List a | len _v == n}
+take = \n. \xs. 
+  if n <= 0 
+    then Nil 
+    else 
+      match xs with 
+        Nil -> Nil
+        Cons y ys -> Cons y (take (dec n) ys)

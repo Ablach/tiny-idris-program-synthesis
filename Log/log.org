@@ -1,0 +1,3 @@
+* 17-09-2020
+
+extended Main.idr repl with lines to parse and run auto + functions

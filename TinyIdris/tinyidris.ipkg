@@ -57,7 +57,9 @@ modules = -- Core TT representations
           Utils.Either,
           Utils.Hex,
           Utils.Octal,
-          Utils.String
+          Utils.String,
+
+	  Synthesis.Synthesize
 
 options = "-p contrib"
 

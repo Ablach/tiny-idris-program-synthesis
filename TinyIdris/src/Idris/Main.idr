@@ -15,6 +15,8 @@ import TTImp.TTImp
 
 import Parser.Source
 
+import Synthesis.Synthesize
+
 import System
 import Data.Strings
 
@@ -40,9 +42,13 @@ runAuto s =
                           | Nothing => do coreLift $ putStrLn "Provided name not in context."
                                           repl
                         case definition d of  
-                          None => do ?call_synth 
+                          None => do checked <- checkTerm [] ttexp Nothing
+                                     res <- synthesize_single checked
+                                     coreLift $ putStrLn res
                                      repl
-                          Hole => do ?call_synth_1
+                          Hole => do checked <- checkTerm [] ttexp Nothing
+                                     res <- synthesize_single checked
+                                     coreLift $ putStrLn res
                                      repl
                           otherwise => do coreLift $ putStrLn "Definition exists; nothing to do"
                                           repl

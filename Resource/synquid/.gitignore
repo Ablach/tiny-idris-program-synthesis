@@ -1,5 +1,0 @@
-dist
-*.o
-*.hi
-/.stack-work/
-stack.yaml.lock

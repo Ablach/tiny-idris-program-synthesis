@@ -10,11 +10,19 @@ import Core.UnifyState
 import TTImp.Elab.Term
 
 export
-synthesize_single : {auto c : Ref Ctxt Defs} ->
-                    {auto u : Ref UST UState} -> 
-                    (Term [], Glued []) -> 
+synthesize_single : {vars : _} ->
+                    {auto c : Ref Ctxt Defs} -> 
+                    {auto u : Ref UST UState} ->  
+                    Env Term vars ->
+                    Glued vars -> 
                     Core String
-synthesize_single (tm , ty) =
-  case !(getTerm ty) of -- replacing with tm does? change name maybe
-      (Bind arg rest scope) => ?dfs
+synthesize_single env ty =
+  case !(getTerm ty) of 
+      (Bind name tm scope) => do defs <- get Ctxt
+                                 let env' : Env Term (name :: vars)
+                                     env' = tm :: env
+                                 let gscope : Glued (name :: vars) 
+                                     gscope = gnf env' scope
+                                 synthesize_single env' gscope                        
+      (Ref namety n) => ?do_synthesizey_things
       otherwise => pure "Not a function type"

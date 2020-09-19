@@ -42,12 +42,12 @@ runAuto s =
                           | Nothing => do coreLift $ putStrLn "Provided name not in context."
                                           repl
                         case definition d of  
-                          None => do checked <- checkTerm [] ttexp Nothing
-                                     res <- synthesize_single checked
+                          None => do (tm , glued)<- checkTerm [] ttexp Nothing
+                                     res <- synthesize_single [] glued
                                      coreLift $ putStrLn res
                                      repl
-                          Hole => do checked <- checkTerm [] ttexp Nothing
-                                     res <- synthesize_single checked
+                          Hole => do (tm , glued) <- checkTerm [] ttexp Nothing
+                                     res <- synthesize_single [] glued
                                      coreLift $ putStrLn res
                                      repl
                           otherwise => do coreLift $ putStrLn "Definition exists; nothing to do"

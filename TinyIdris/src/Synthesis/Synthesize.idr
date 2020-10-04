@@ -15,44 +15,38 @@ import Data.List
 import Data.List.Quantifiers
 import Data.Maybe
 
+data SynthErr : Type where
+  NotInContext : (tm : Term vars) -> SynthErr 
+  NotAPiBinder : (tm : Term vars) -> SynthErr
+  NotWellTyped : (tm : Term vars) -> SynthErr
+  NoMatch      : (tm : Term vars) -> SynthErr
 
-synthesize_world : {vars' : _} ->
-                   {auto c : Ref Ctxt Defs} -> 
-                   {auto u : Ref UST UState} ->
-                   Env Term vars' -> Closure vars' -> 
-                   Maybe (NF vars')
-synthesize_world env (MkClosure lenv env' (Ref n nty)) = ?synthesize_world_rhs_4
-synthesize_world env (MkClosure lenv env' (Bind n bdr scope)) = ?synthesize_world_rhs_6
-synthesize_world env (MkClosure lenv env' _) = Nothing
+getArgs :{vars : _} -> List (Term vars) -> Term vars -> (List (Term vars),  Term vars)
+getArgs xs (Bind n (Pi pinfo tm) (Ref nm nty)) = (xs , (Ref nm nty))
+getArgs xs (Bind n (Pi pinfo tm) (Bind x y scope)) = getArgs 
+getArgs xs _ = ?getArgs_rhs_7
 
-mltodef : Maybe (List (NF vars)) ->
-          Maybe Def
+findBest : Term vars -> List (Term vars) -> Term vars
+findBest tm tms = ?findBest_rhs
 
-synthesize : {vars : _} -> 
-             {auto c : Ref Ctxt Defs} ->
-             {auto u : Ref UST UState} ->
-             Env Term vars ->
-             NF vars -> Core (Maybe Def)
-synthesize env (NTCon x tag arity xs)
-   = do let ds = map (synthesize_world env) xs                                                     
-        let res = help ds                                                                        
-        case res of                                                                              
-             Nothing => pure Nothing                                                             
-             js => pure (mltodef js)
-     where                                                                                       
-        help : List (Maybe a) -> Maybe (List a)                                                  
-        help [] = Just []                                                                        
-        help (y :: ys)                                                                           
-        = case isItJust y of                                                                     
-               (Yes prf) => do let y' = fromJust y                                               
-                               case help ys of                                                   
-                                    Nothing => Nothing                                           
-                                    (Just t) => Just (y' :: t) 
-               (No contra) => Nothing                                                           
-synthesize _ _ = pure Nothing 
+mkClause : Term vars -> List Clause
 
-to_string : {vars : _} -> NF vars -> String
-to_string x = ?to_string_rhs
+getReturns : {vars : _} -> Env Term vars -> List (Term vars) -> Term vars -> Maybe (Term vars)
+
+synthClauses : {vars : _} -> 
+               {auto c : Ref Ctxt Defs} ->
+               Env Term vars -> 
+               List (Term vars) -> Term vars -> 
+               Core (Either SynthErr (List Clause))
+synthClauses env args n
+  = do defs <- get Ctxt
+       bs <- filterM (convert defs env n) args
+       case bs of 
+            (x :: xs) => pure $ Right $ mkClause (findBest n (x :: xs))
+            [] => do let fs = getReturns env args n 
+                     case fs of 
+                         Nothing => pure (Left $ NoMatch n)
+                         (Just x) => pure (Right $ mkClause x)
 
 export
 synthesize_single : {vars : _} ->
@@ -60,24 +54,18 @@ synthesize_single : {vars : _} ->
                     {auto u : Ref UST UState} ->  
                     Env Term vars ->
                     Glued vars -> 
-                    Core String
-synthesize_single env ty 
-  = do t <- getTerm ty 
-       case t of 
-            (Bind name tm scope) => 
-                  do defs <- get Ctxt
-                     let env' = tm :: env
-                     let gscope = gnf env' scope
-                     synthesize_single env' gscope                        
-            (Ref namety n) => 
-                 do defs <- get Ctxt
-                    def <- lookupDef n defs
-                    case def of
-                         Nothing => pure "Name not in context."
-                         (Just d) => 
-                              do res <- synthesize env !(getNF ty)
-                                 case res of 
-                                      Nothing => pure "Could not synthesize a definiton."
-                                      (Just x) => pure $ ?fdfrest --to_string x
-            otherwise => pure "Invalid signature"
-     
+                    Core (Either SynthErr String)
+synthesize_single env ty
+  =  do t <- getTerm ty
+        defs <- get Ctxt
+        case t of
+         (Bind name (Pi pinfo t') scope) =>
+               do let (args, tm) = getArgs [] t
+                  case !(nf defs env tm)  of 
+                       (NTCon x tag arity xs) => do
+                              sc <- synthClauses env args tm -- should actually be a timer fun
+                              case sc of 
+                                   (Left err) => pure (Left err)
+                                   (Right yay) => ?lclausetoStr yay
+                       _ => pure (Left $ NotWellTyped t)
+         _ => pure (Left $ NotAPiBinder t)

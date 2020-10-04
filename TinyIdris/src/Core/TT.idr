@@ -469,19 +469,19 @@ export
       showApp (Meta n args) []
           = "?" ++ show n ++ "_" ++ show args
       showApp (Bind x (Lam p ty) sc) []
-          = "\\" ++ show x ++ " : " ++ show ty ++
+          = "Bind" ++ show x ++ " lam " ++ " " ++ show ty ++
             " => " ++ show sc
       showApp (Bind x (Pi Explicit ty) sc) []
-          = "((" ++ show x ++ " : " ++ show ty ++
+          = "(bind " ++ show x ++ " (pi exp " ++ show ty ++
             ") -> " ++ show sc ++ ")"
       showApp (Bind x (Pi Implicit ty) sc) []
-          = "{" ++ show x ++ " : " ++ show ty ++
+          = "{bind" ++ show x ++ " pi imp " ++ show ty ++
             "} -> " ++ show sc
       showApp (Bind x (PVar ty) sc) []
-          = "pat " ++ show x ++ " : " ++ show ty ++
+          = "bind pat " ++ show x ++ " pvar " ++ show ty ++
             " => " ++ show sc
       showApp (Bind x (PVTy ty) sc) []
-          = "pty " ++ show x ++ " : " ++ show ty ++
+          = "bind pty " ++ show x ++ " pty " ++ show ty ++
             " => " ++ show sc
       showApp (App _ _) [] = "[can't happen]"
       showApp TType [] = "Type"

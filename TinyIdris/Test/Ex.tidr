@@ -1,0 +1,29 @@
+data List : Type -> Type where
+     Nil : (a : Type) -> List a
+     Cons : (a : Type) -> a -> List a -> List a
+
+data Nat : Type where
+     Z : Nat
+     S : Nat -> Nat
+
+data Vect : Nat -> Type -> Type where
+    VNil : (a : Type) -> Vect Z a
+    VCons : (a : Type) -> (n : Nat) -> a -> Vect n a -> Vect (S n) a
+
+add : Nat -> Nat -> Nat
+pat n : Nat => 
+    add Z n = n
+pat n : Nat, m : Nat => 
+    add (S n) m = S (add n m)
+
+one : Nat
+one = S Z
+
+two : Nat
+two = S one
+
+Mul : Nat -> Nat -> Nat
+
+
+vapp : (a : _) -> (n : _) -> (m : _) ->  Vect n a -> Vect m a -> Vect (add n m) a
+

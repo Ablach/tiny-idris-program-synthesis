@@ -144,6 +144,7 @@ toSubVars (n :: ns) xs
    Also, return the list of arguments the metavariable was applied to, to
    make sure we use them in the right order when we build the solution.
 -}
+
 patternEnv : {auto c : Ref Ctxt Defs} ->
              {auto u : Ref UST UState} ->
              {vars : _} ->

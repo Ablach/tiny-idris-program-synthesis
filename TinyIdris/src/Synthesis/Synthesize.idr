@@ -21,10 +21,7 @@ data SynthErr : Type where
   NotWellTyped : (tm : Term vars) -> SynthErr
   NoMatch      : (tm : Term vars) -> SynthErr
 
-getArgs :{vars : _} -> List (Term vars) -> Term vars -> (List (Term vars),  Term vars)
-getArgs xs (Bind n (Pi pinfo tm) (Ref nm nty)) = (xs , (Ref nm nty))
-getArgs xs (Bind n (Pi pinfo tm) (Bind x y scope)) = getArgs 
-getArgs xs _ = ?getArgs_rhs_7
+getArgs :{vars : _} -> List (Term vars) -> Term vars -> Core (List (Term _),  Term _)
 
 findBest : Term vars -> List (Term vars) -> Term vars
 findBest tm tms = ?findBest_rhs
@@ -60,7 +57,7 @@ synthesize_single env ty
         defs <- get Ctxt
         case t of
          (Bind name (Pi pinfo t') scope) =>
-               do let (args, tm) = getArgs [] t
+               do (args, tm) <- getArgs [] t
                   case !(nf defs env tm)  of 
                        (NTCon x tag arity xs) => do
                               sc <- synthClauses env args tm -- should actually be a timer fun

@@ -35,7 +35,8 @@ rest ttexp = do (tm, ty) <- (checkTerm [] ttexp Nothing)
                 coreLift $ putStrLn $ "show get term of glued: " ++ show !(getTerm ty)
                 coreLift $ putStrLn $ "show normalised get term of glued: " ++ show !(normalise defs [] !(getTerm ty))
                -- coreLift $ putStrLn $ "show get nf of glued: " ++ show !(getNF ty)
-                coreLift $ putStrLn !(synthesize_single [] ty)
+               -- coreLift $ putStrLn !(synthesize_single [] ty)
+                 
 
 runAuto : {auto c : Ref Ctxt Defs} ->
           {auto u : Ref UST UState} -> 
@@ -49,8 +50,15 @@ runAuto s =
          | Left err => do coreLift $ printLn err
                           repl 
      case ttexp of 
-          (IVar x) => do coreLift $ putStrLn "I am a var" 
-                         rest ttexp
+          (IVar x) => do coreLift $ putStrLn "I am a var"
+                         defs <- get Ctxt
+                         t <- lookupDef x defs
+                         case t of
+                              Nothing => rest ttexp 
+                              (Just y) => do
+                                        let tpe = type y
+                                        coreLift $ putStrLn $ "lookup " ++ show tpe
+                                        rest ttexp
           (IPi x y argTy retTy) => do coreLift $ putStrLn "I am a pi"
                                       rest ttexp
           (ILam x y argTy scope) => do coreLift $ putStrLn "I am a lam" 

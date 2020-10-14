@@ -37,7 +37,14 @@ runAuto s =
   do let Right ttexp = runParser Nothing s (expr "(input)" init)
          | Left err => do coreLift $ printLn err
                           repl 
-     coreLift $ printLn $ synthesize_single ttexp
+     -- coreLift $ printLn $ synthesize_single [] ttexp
+     (tm, ty) <- checkTerm [] ttexp Nothing
+     coreLift $ putStrLn $ "Checked: " ++ show tm
+     defs <- get Ctxt
+     coreLift $ putStrLn $ "Type: " ++ show !(normalise defs [] !(getTerm ty))
+     nf <- normalise defs [] tm
+     coreLift $ putStrLn $ "Evaluated: " ++ show nf
+
      repl
 
 repl = do coreLift $ putStr "> "

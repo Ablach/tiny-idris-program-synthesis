@@ -31,57 +31,27 @@ to_str : Core (Either SynthErr Def) ->
 to_def : {vars : _} ->
          {auto c : Ref Ctxt Defs} -> 
          Env Term vars ->
-         Core (Either SynthErr (NF vars)) ->
+         Core (Either SynthErr (Term vars)) ->
          Core (Either SynthErr Def)
-
-get_args_ret : {vars : _} ->
-              {auto c : Ref Ctxt Defs} -> 
-              Env Term vars ->
-              List (NF vars) ->
-              NF vars ->
-              Core (List (NF vars) , NF vars)
-get_args_ret env l (NBind n (Pi pinfo nml) sc) = 
-  do defs <- get Ctxt
-     (ls , ret) <- get_args_ret env [] 
-                        !(sc defs 
-                          (toClosure env 
-                            !(quote defs env 
-                              !(quote defs env nml))))
-     pure $ ((nml :: ls) , ret)
-get_args_ret env l nml = pure (l , nml)
-
-isBind : {vars : _} -> (a , NF vars) -> Core Bool
-isBind (_ , (NBind _ _ _)) = pure True
-isBind _                   = pure False
 
 synthesize : {vars : _} -> 
              {auto c : Ref Ctxt Defs} ->
              Env Term vars -> 
-             NF vars -> 
-             Core (Either SynthErr (NF vars))
-synthesize env tm =
-  do defs <- get Ctxt
-     qt <- quote defs env tm
-     (args , (NTCon n tag arity cs)) <- get_args_ret env [] tm
-        | _ => pure (Left $ NotWellTyped qt)  
+             Term vars -> 
+             Core (Either SynthErr (Term vars))
+synthesize env (Ref (TyCon tag arity) n)   =
+  do 
      
-     bs <- traverse (convert defs env (NTCon n tag arity cs)) args
-     let zs = zip bs args
-     [] <- filterM (\ (x , y) => pure (x == True)) zs
-        | ((x, y) :: xs) => pure $ Right y
-     
-     (x' :: xs') <- filterM isBind zs
-        | [] => pure $ Left NoMatch
-     
-     ps <- traverse (\ (x , y) => get_args_ret env [] y) (x' :: xs')
-     ((as, y) :: xs) <- filterM (\ (x , y) => convert defs env (NTCon n tag arity cs) y) ps 
-        | [] => pure $ Left $ NoMatch
-     
-     synthed_args <- traverse (synthesize env) as
-     ((l :: ls) , rs) <- pure $ partitionEithers synthed_args
-        | ([] , rs) => pure $ Right $ NApp ?head ?rest -- apply y to args
-     
-     ?fdfs -- repeat for all xs (77) failing if not successful
+     ?rest
+synthesize env (Bind n (Pi pinfo t) scope) = 
+  do let env' = (Lam pinfo t) :: env
+     Right rest <- synthesize env' scope
+       | Left err => pure $ Left err
+     pure $ Right $ Bind n (Lam pinfo t) rest
+
+synthesize env tm = pure $ Left $ NotWellTyped tm
+
+
 
 export
 synthesize_single : {vars : _} ->
@@ -90,13 +60,11 @@ synthesize_single : {vars : _} ->
                     Env Term vars ->
                     RawImp ->
                     Core (Either SynthErr String)
-synthesize_single env (IVar x) = 
-  do defs <- get Ctxt
-     (t , ty) <- checkTerm env (IVar x) Nothing
-     nml     <- nf defs env t
-     case !(lookupDef x defs) of 
-          (Just (MkGlobalDef type None)) => to_str $ to_def env (synthesize env nml)
-          (Just (MkGlobalDef type Hole)) => to_str $ to_def env (synthesize env nml)
-          (Just (MkGlobalDef type _))    => pure (Left $ AlreadyDefined type)
-          Nothing                        => pure (Left $ NotInContext x)
-synthesize_single env v = pure (Left $ NotUndefinedVar v)
+synthesize_single env (IVar x) = ?synthesize_single_rhs_1
+synthesize_single env (IPi x y argTy retTy) = ?synthesize_single_rhs_2
+synthesize_single env (ILam x y argTy scope) = ?synthesize_single_rhs_3
+synthesize_single env (IPatvar x ty scope) = ?synthesize_single_rhs_4
+synthesize_single env (IApp x y) = ?synthesize_single_rhs_5
+synthesize_single env Implicit = ?synthesize_single_rhs_6
+synthesize_single env IType = ?synthesize_single_rhs_7
+synthesize_single env (IHole s) = ?fjdskf

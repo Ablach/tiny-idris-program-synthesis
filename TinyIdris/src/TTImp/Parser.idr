@@ -47,6 +47,8 @@ atom fname
          pure Implicit
   <|> do x <- name
          pure (IVar x)
+  <|> do x <- holeName
+         pure (IHole $ UN x)
 
 getRight : Either a b -> Maybe b
 getRight (Left _) = Nothing

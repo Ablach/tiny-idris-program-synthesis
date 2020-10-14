@@ -133,3 +133,12 @@ checkTerm env Implicit (Just exp)
          metaval <- newMeta env nm expty Hole
          pure (metaval, exp)
 checkTerm env IType exp = checkExp env TType gType exp
+
+checkTerm env (IHole s) Nothing = throw (GenericMsg "Unknown type for Hole.")
+checkTerm env (IHole s) (Just gexp) = do defs <- get Ctxt
+                                         Nothing <- lookupDef s defs
+                                          | _ => throw (GenericMsg $ show s ++  " already defined")
+                                         exp <- getTerm gexp
+                                         metaval <- newMeta env s exp Hole
+                                         pure (metaval , gexp) 
+

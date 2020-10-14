@@ -13,7 +13,7 @@ data RawImp : Type where
         -- ^ Idris doesn't need this since the pattern variable names are
         -- inferred, but in this initial version everything is explicit
      IApp : RawImp -> RawImp -> RawImp
-
+     IHole : Name -> RawImp
      Implicit : RawImp
      IType : RawImp
 

@@ -59,7 +59,9 @@ modules = -- Core TT representations
           Utils.Octal,
           Utils.String,
 
-	  Synthesis.Synthesize
+	  Synthesis.Synthesize,
+	  Synthesis.Unelab,
+	  Synthesis.Resugar
 
 options = "-p contrib"
 

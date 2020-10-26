@@ -11,6 +11,9 @@ import Core.Value
 import TTImp.Elab.Term
 import TTImp.TTImp
 
+import Synthesis.Unelab
+import Synthesis.Resugar
+
 import Data.List
 import Data.List.Quantifiers
 import Data.Maybe
@@ -20,51 +23,37 @@ data SynthErr : Type where
   NotInContext    : (tm : Name     ) -> SynthErr 
   NotAPiBinder    : (tm : NF   vars) -> SynthErr
   NotWellTyped    : (tm : Term vars) -> SynthErr 
-  NotUndefinedVar : (tm : RawImp   ) -> SynthErr
+  NotHole         : (tm : RawImp   ) -> SynthErr
   AlreadyDefined  : (tm : Term []  ) -> SynthErr
   NoMatch         :                     SynthErr
   Impossible      :                     SynthErr
 
-to_str : Core (Either SynthErr Def) ->
-         Core (Either SynthErr String)
-
-to_def : {vars : _} ->
-         {auto c : Ref Ctxt Defs} -> 
-         Env Term vars ->
-         Core (Either SynthErr (Term vars)) ->
-         Core (Either SynthErr Def)
-
 synthesize : {vars : _} -> 
              {auto c : Ref Ctxt Defs} ->
              Env Term vars -> 
-             Term vars -> 
+             Term vars -> List (Term vars) -> 
              Core (Either SynthErr (Term vars))
-synthesize env (Ref (TyCon tag arity) n)   =
-  do 
-     
-     ?rest
-synthesize env (Bind n (Pi pinfo t) scope) = 
-  do let env' = (Lam pinfo t) :: env
-     Right rest <- synthesize env' scope
-       | Left err => pure $ Left err
-     pure $ Right $ Bind n (Lam pinfo t) rest
-
-synthesize env tm = pure $ Left $ NotWellTyped tm
-
-
+synthesize env (Ref (TyCon tag arity) n) args 
+  = do Just (MkIsDefined prf) <- pure $ defined n env
+         | _ => pure (Left NoMatch)
+       Lam pinfo tm <- pure $ getBinder prf env
+        | _ => pure (Left Impossible)
+       pure (Right tm)
+synthesize _ _ _ = pure (Left Impossible) -- hopefully
 
 export
-synthesize_single : {vars : _} ->
-                    {auto c : Ref Ctxt Defs} -> 
+synthesize_single : {auto c : Ref Ctxt Defs} -> 
                     {auto u : Ref UST UState} ->  
-                    Env Term vars ->
                     RawImp ->
                     Core (Either SynthErr String)
-synthesize_single env (IVar x) = ?synthesize_single_rhs_1
-synthesize_single env (IPi x y argTy retTy) = ?synthesize_single_rhs_2
-synthesize_single env (ILam x y argTy scope) = ?synthesize_single_rhs_3
-synthesize_single env (IPatvar x ty scope) = ?synthesize_single_rhs_4
-synthesize_single env (IApp x y) = ?synthesize_single_rhs_5
-synthesize_single env Implicit = ?synthesize_single_rhs_6
-synthesize_single env IType = ?synthesize_single_rhs_7
-synthesize_single env (IHole s) = ?fjdskf
+synthesize_single (IVar n) = 
+  do defs <- get Ctxt
+     Just def <- lookupDef n defs
+      | _ => pure (Left $ NotInContext n)
+     (MetaVar vs e retTy args)  <- pure $ definition def 
+      | _ => pure (Left $ AlreadyDefined $ type def)
+     Right d <- synthesize {vars = vs} e retTy args
+      | Left err => pure $ Left err 
+     pure (Right $ resugar $ unelab e d) 
+     
+synthesize_single tm = pure (Left $ NotHole tm)

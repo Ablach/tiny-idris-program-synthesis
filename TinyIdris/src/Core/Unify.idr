@@ -327,7 +327,9 @@ mutual
   export
   Unify NF where
     -- If we have two pi binders, check the arguments and scope
-    unify env (NBind x b sc) (NBind x' b' sc') = ?unifyBinders
+    unify env (NBind x (Pi y z) sc) (NBind x' (Pi w v) sc') 
+        = ?unifyBinders
+        
     -- Matching constructors, reduces the problem to unifying the arguments
     unify env nx@(NDCon n t a args) ny@(NDCon n' t' a' args')
         = if t == t'

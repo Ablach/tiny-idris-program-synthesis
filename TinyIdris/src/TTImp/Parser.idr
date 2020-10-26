@@ -45,11 +45,12 @@ atom fname
          pure IType
   <|> do symbol "_"
          pure Implicit
+
+  <|> do n <- holeName 
+         pure (IHole $ UN n)
+
   <|> do x <- name
          pure (IVar x)
-  <|> do x <- holeName
-         pure (IHole $ UN x)
-
 getRight : Either a b -> Maybe b
 getRight (Left _) = Nothing
 getRight (Right v) = Just v
@@ -87,6 +88,7 @@ mutual
   typeExpr : FileName -> IndentInfo -> Rule RawImp
   typeExpr fname indents
       = do arg <- appExpr fname indents
+           
            (do continue indents
                rest <- some (do exp <- bindSymbol
                                 op <- appExpr fname indents
@@ -219,14 +221,14 @@ parseRHS fname indents lhs
     = do symbol "="
          commit
          rhs <- expr fname indents
-         atEnd indents
+         atEnd indents 
          pure (!(getFn lhs), PatClause lhs rhs)
   where
     getFn : RawImp -> SourceEmptyRule Name
-    getFn (IVar n) = pure n
+    getFn (IVar n) = pure n 
     getFn (IApp f a) = getFn f
     getFn (IPatvar _ _ sc) = getFn sc
-    getFn _ = fail "Not a function application"
+    getFn _ = fail "Not a function application" 
 
 ifThenElse : Bool -> Lazy t -> Lazy t -> t
 ifThenElse True t e = t

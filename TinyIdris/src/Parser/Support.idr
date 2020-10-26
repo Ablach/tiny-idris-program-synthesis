@@ -18,6 +18,7 @@ data ParseError tok
   | FileFail  FileError
   | LitFail   LiterateError
 
+
 export
 Show tok => Show (ParseError tok) where
   show (ParseFail err loc toks)
@@ -30,6 +31,7 @@ Show tok => Show (ParseError tok) where
   show (LitFail (MkLitErr l c str))
       = "Lit error(s) at " ++ show (c, l) ++ " input: " ++ str
 
+  
 export
 toGenericParsingError : ParsingError (TokenData token) -> ParseError token
 toGenericParsingError (Error err [])      = ParseFail err Nothing []

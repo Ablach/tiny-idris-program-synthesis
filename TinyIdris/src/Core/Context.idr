@@ -13,8 +13,9 @@ data Def : Type where
     PMDef : (args : List Name) -> (treeCT : CaseTree args) ->
             Def -- Ordinary function definition
     DCon : (tag : Int) -> (arity : Nat) -> Def -- data constructor
-    TCon : (tag : Int) -> (arity : Nat) -> Def
+    TCon : (tag : Int) -> (arity : Nat) -> (datacons : List Name) -> Def
     Hole : Def
+    MetaVar : (vars : List Name) ->  Env Term vars -> (retTy : Term vars) -> (args : List (Term vars)) -> Def
     Guess : (guess : Term []) ->
             (constraints : List Int) -> Def -- unification constraints
 

@@ -25,5 +25,10 @@ two = S one
 Mul : Nat -> Nat -> Nat
 
 
-vapp : (a : _) -> (n : _) -> (m : _) ->  Vect n a -> Vect m a -> Vect (add n m) a
+vapp : (a : _) -> (n : _) -> (m : _) -> Vect n a -> Vect m a -> Vect (add n m) a
+pat a : Type , m : Nat , ys : Vect m a =>
+	vapp a Z m (VNil a) ys = ?h
+pat a : Type , n : Nat , x : a , xs : Vect n a, m : Nat , ys : Vect m a =>
+    	vapp a (S n) m (VCons a n x xs) ys
+        	= ?h1
 

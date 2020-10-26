@@ -31,14 +31,18 @@ processData (MkImpData n tycon datacons)
          -- Exercise: We should also check whether it's already defined!
          defs <- get Ctxt
          arity <- getArity defs [] tychk
-         addDef n (newDef tychk (TCon 0 arity))
+         addDef n (newDef tychk (TCon 0 arity []))       
          chkcons <- traverse processCon datacons
 
          defs <- get Ctxt
          traverse_ (\ (i, (cn, ty)) =>
                        do carity <- getArity defs [] ty
-                          addDef cn (newDef ty (DCon (cast i) carity)))
+                          addDef cn (newDef ty (DCon (cast i) carity))
+                          updateDef n (\d => case definition d of   
+                                        (TCon tag k xs) => newDef (type d) (TCon tag k (cn :: xs))
+                                        _ => d))
                    (zip [0..(length chkcons)] chkcons)
+         
          -- Idris 2 has to do a bit more work here to relate the type constructor
          -- and data constructors (e.g. for totality checking, interactive
          -- editing) but this is enough for our purposes

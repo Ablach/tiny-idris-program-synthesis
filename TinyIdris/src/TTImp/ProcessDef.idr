@@ -12,6 +12,8 @@ import Core.Value
 import TTImp.Elab.Term
 import TTImp.TTImp
 
+import Data.Strings
+
 getRHSEnv : {vars : _} ->
             Env Term vars -> Term vars -> Term vars ->
             Core (vars' ** (Env Term vars', Term vars', Term vars'))
@@ -51,7 +53,7 @@ processDef n clauses
 
          -- Now we have all the clauses, make a case tree
          (args ** tree) <- getPMDef n (type gdef) chkcs
-
+    
          -- Update the definition with the compiled tree
          updateDef n (record { definition = PMDef args tree })
          coreLift $ putStrLn $ "Processed " ++ show n

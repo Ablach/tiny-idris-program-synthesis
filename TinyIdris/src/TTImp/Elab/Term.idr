@@ -67,7 +67,7 @@ checkTerm env (IVar n) exp
                      | Nothing => throw (UndefinedName n)
                 let nt = case definition gdef of
                               DCon t a => DataCon t a
-                              TCon t a => TyCon t a
+                              TCon t a ds => TyCon t a
                               _ => Func
                 checkExp env (Ref nt n) (gnf env (embed (type gdef))) exp
 checkTerm env (IPi p mn argTy retTy) exp
@@ -134,11 +134,12 @@ checkTerm env Implicit (Just exp)
          pure (metaval, exp)
 checkTerm env IType exp = checkExp env TType gType exp
 
-checkTerm env (IHole s) Nothing = throw (GenericMsg "Unknown type for Hole.")
-checkTerm env (IHole s) (Just gexp) = do defs <- get Ctxt
-                                         Nothing <- lookupDef s defs
-                                          | _ => throw (GenericMsg $ show s ++  " already defined")
-                                         exp <- getTerm gexp
-                                         metaval <- newMeta env s exp Hole
-                                         pure (metaval , gexp) 
-
+checkTerm env (IHole s) Nothing = ?fdsfd
+checkTerm env (IHole s) (Just gexp) = 
+  do defs <- get Ctxt 
+     Nothing <- lookupDef s defs
+      | _ => throw (GenericMsg $ show s ++  " already defined")
+     exp <- getTerm gexp
+     let (tm , args) = getFnArgs exp 
+     metaval <- newMeta env s exp (MetaVar vars env tm args)
+     pure (metaval , gexp) 

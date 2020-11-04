@@ -181,9 +181,9 @@ traverseList1_ f (x :: xs) = do
 namespace Binder
   export
   traverse : (a -> Core b) -> Binder a -> Core (Binder b)
-  traverse f (Lam p ty) = pure $ Lam p !(f ty)
-  traverse f (Pi p ty) = pure $ Pi p !(f ty)
-  traverse f (PVar ty) = pure $ PVar !(f ty)
+  traverse f (Lam n p ty) = pure $ Lam n p !(f ty)
+  traverse f (Pi n p ty) = pure $ Pi n p !(f ty)
+  traverse f (PVar n ty) = pure $ PVar n !(f ty)
   traverse f (PVTy ty) = pure $ PVTy !(f ty)
 
 export

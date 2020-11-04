@@ -25,10 +25,22 @@ two = S one
 Mul : Nat -> Nat -> Nat
 
 
+
+-- TESTS
+
+idN : Nat -> Nat -- pass
+pat n : Nat =>
+	idN n = ?t1
+
+idBN : Nat -> Nat -> Nat 
+pat n : Nat =>
+	idN n = ?t2
+
+
 vapp : (a : _) -> (n : _) -> (m : _) -> Vect n a -> Vect m a -> Vect (add n m) a
 pat a : Type , m : Nat , ys : Vect m a =>
-	vapp a Z m (VNil a) ys = ?h
+	vapp a Z m (VNil a) ys = ?t3
 pat a : Type , n : Nat , x : a , xs : Vect n a, m : Nat , ys : Vect m a =>
     	vapp a (S n) m (VCons a n x xs) ys
-        	= ?h1
+        	= ?t4
 

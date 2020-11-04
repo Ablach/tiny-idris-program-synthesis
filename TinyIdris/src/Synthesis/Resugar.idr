@@ -44,7 +44,7 @@ resugar (IPi x (Just y) argTy scope)
   = " ( " ++ show y ++ " : " ++ resugar argTy ++ " ) -> " ++ resugar scope
 resugar (ILam x y argTy scope) = resugarLam y scope True
 resugar (IPatvar x ty scope) = resugarPat x ty scope True
-resugar (IApp x y) = (resugar x) ++ " " ++ resugar y
+resugar (IApp x y) = "( " ++ (resugar x) ++ " " ++ resugar y ++ " )"
 resugar (IHole x) = "?" ++ show x
 resugar Implicit = "_"
 resugar IType = " : "

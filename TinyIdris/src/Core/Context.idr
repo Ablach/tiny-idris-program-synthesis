@@ -15,7 +15,7 @@ data Def : Type where
     DCon : (tag : Int) -> (arity : Nat) -> Def -- data constructor
     TCon : (tag : Int) -> (arity : Nat) -> (datacons : List Name) -> Def
     Hole : Def
-    MetaVar : (vars : List Name) ->  Env Term vars -> (retTy : Term vars) -> (args : List (Term vars)) -> Def
+    MetaVar : (vars : List Name) ->  Env Term vars -> (retTy : Term vars) -> Def
     Guess : (guess : Term []) ->
             (constraints : List Int) -> Def -- unification constraints
 

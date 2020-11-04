@@ -103,10 +103,10 @@ export
 abstractEnvType : {vars : _} ->
                   Env Term vars -> (tm : Term vars) -> Term []
 abstractEnvType [] tm = tm
-abstractEnvType (Pi e ty :: env) tm
-    = abstractEnvType env (Bind _ (Pi e ty) tm)
+abstractEnvType (Pi n e ty :: env) tm
+    = abstractEnvType env (Bind _ (Pi n e ty) tm)
 abstractEnvType (b :: env) tm
-    = abstractEnvType env (Bind _ (Pi Explicit (binderType b)) tm)
+    = abstractEnvType env (Bind _ (Pi (MN "_" 0) Explicit (binderType b)) tm)
 
 mkConstantAppArgs : {vars : _} ->
                     Env Term vars ->
@@ -148,7 +148,7 @@ mkConstant : {vars : _} ->
 mkConstant [] tm = tm
 mkConstant {vars = x :: _} (b :: env) tm
     = let ty = binderType b in
-          mkConstant env (Bind x (Lam Explicit ty) tm)
+          mkConstant env (Bind x (Lam (MN "_" 0) Explicit ty) tm)
 
 -- Given a term and a type, add a new guarded constant to the global context
 -- by applying the term to the current environment

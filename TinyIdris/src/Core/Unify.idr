@@ -241,12 +241,12 @@ instantiate {newvars} env mname mdef locs tm
       where
         updateIVarsB : {vs, newvars : _} ->
                        IVars vs newvars -> Binder (Term newvars) -> Maybe (Binder (Term vs))
-        updateIVarsB ivs (Lam p t)
-            = Just (Lam p !(updateIVars ivs t))
-        updateIVarsB ivs (Pi p t)
-            = Just (Pi p !(updateIVars ivs t))
-        updateIVarsB ivs (PVar t)
-            = Just (PVar !(updateIVars ivs t))
+        updateIVarsB ivs (Lam n p t)
+            = Just (Lam n p !(updateIVars ivs t))
+        updateIVarsB ivs (Pi n p t)
+            = Just (Pi n p !(updateIVars ivs t))
+        updateIVarsB ivs (PVar n t)
+            = Just (PVar n !(updateIVars ivs t))
         updateIVarsB ivs (PVTy t)
             = Just (PVTy !(updateIVars ivs t))
     updateIVars ivs (App f a)
@@ -258,9 +258,9 @@ instantiate {newvars} env mname mdef locs tm
             List (Var newvars) ->
             IVars vs newvars -> Term newvars -> Term vs ->
             Core (Term vs)
-    mkDef (v :: vs) vars soln (Bind x (Pi _ ty) sc)
+    mkDef (v :: vs) vars soln (Bind x (Pi n _ ty) sc)
        = do sc' <- mkDef vs (ICons (Just v) vars) soln sc
-            pure $ Bind x (Lam Explicit Erased) sc'
+            pure $ Bind x (Lam n Explicit Erased) sc'
     mkDef [] vars soln ty
        = do let Just soln' = updateIVars vars soln
                 | Nothing => ufail ("Can't make solution for " ++ show mname)
@@ -327,7 +327,7 @@ mutual
   export
   Unify NF where
     -- If we have two pi binders, check the arguments and scope
-    unify env (NBind x (Pi y z) sc) (NBind x' (Pi w v) sc') 
+    unify env (NBind x (Pi n y z) sc) (NBind x' (Pi n' w v) sc') 
         = ?unifyBinders
         
     -- Matching constructors, reduces the problem to unifying the arguments

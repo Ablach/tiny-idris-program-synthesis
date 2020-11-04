@@ -56,7 +56,7 @@ parameters (defs : Defs)
         = evalRef env nt fn stk (NApp (NRef nt fn) stk)
     eval {vars} {free} env locs (Meta name args) stk
         = evalMeta env name (map (MkClosure locs env) args) stk
-    eval env locs (Bind x (Lam _ ty) scope) (thunk :: stk)
+    eval env locs (Bind x (Lam _ _ ty) scope) (thunk :: stk)
         = eval env (thunk :: locs) scope stk
     eval env locs (Bind x b scope) stk
         = do b' <- traverse (\tm => eval env locs tm []) b
@@ -313,15 +313,15 @@ mutual
                 Ref QVar Int -> Defs -> Bounds bound ->
                 Env Term free -> Binder (NF free) ->
                 Core (Binder (Term (bound ++ free)))
-  quoteBinder q defs bounds env (Lam p ty)
+  quoteBinder q defs bounds env (Lam n p ty)
       = do ty' <- quoteGenNF q defs bounds env ty
-           pure (Lam p ty')
-  quoteBinder q defs bounds env (Pi p ty)
+           pure (Lam n p ty')
+  quoteBinder q defs bounds env (Pi n p ty)
       = do ty' <- quoteGenNF q defs bounds env ty
-           pure (Pi p ty')
-  quoteBinder q defs bounds env (PVar ty)
+           pure (Pi n p ty')
+  quoteBinder q defs bounds env (PVar n ty)
       = do ty' <- quoteGenNF q defs bounds env ty
-           pure (PVar ty')
+           pure (PVar n ty')
   quoteBinder q defs bounds env (PVTy ty)
       = do ty' <- quoteGenNF q defs bounds env ty
            pure (PVTy ty')
@@ -412,9 +412,9 @@ mutual
   convBinders : {vars : _} ->
                 Ref QVar Int -> Defs -> Env Term vars ->
                 Binder (NF vars) -> Binder (NF vars) -> Core Bool
-  convBinders q defs env (Pi ix tx) (Pi iy ty)
+  convBinders q defs env (Pi nx ix tx) (Pi ny iy ty)
       = convGen q defs env tx ty
-  convBinders q defs env (Lam ix tx) (Lam iy ty)
+  convBinders q defs env (Lam nx ix tx) (Lam ny iy ty)
       = convGen q defs env tx ty
   convBinders q defs env bx by
       = pure False
@@ -464,7 +464,7 @@ mutual
 export
 getValArity : {vars : _} ->
               Defs -> Env Term vars -> NF vars -> Core Nat
-getValArity defs env (NBind x (Pi _ _) sc)
+getValArity defs env (NBind x (Pi _ _ _) sc)
     = pure (S !(getValArity defs env !(sc defs (toClosure env Erased))))
 getValArity defs env val = pure 0
 

@@ -95,24 +95,24 @@ data PiInfo : Type where
 
 public export
 data Binder : Type -> Type where
-     Lam : PiInfo -> ty -> Binder ty
-     Pi : PiInfo -> ty -> Binder ty
+     Lam : Name -> PiInfo -> ty -> Binder ty
+     Pi : Name -> PiInfo -> ty -> Binder ty
 
-     PVar : ty -> Binder ty -- pattern bound variables ...
+     PVar : Name -> ty -> Binder ty -- pattern bound variables ...
      PVTy : ty -> Binder ty -- ... and their type
 
 export
 binderType : Binder tm -> tm
-binderType (Lam x ty) = ty
-binderType (Pi x ty) = ty
-binderType (PVar ty) = ty
+binderType (Lam n x ty) = ty
+binderType (Pi n x ty) = ty
+binderType (PVar n ty) = ty
 binderType (PVTy ty) = ty
 
 export
 Functor Binder where
-  map func (Lam x ty) = Lam x (func ty)
-  map func (Pi x ty) = Pi x (func ty)
-  map func (PVar ty) = PVar (func ty)
+  map func (Lam n x ty) = Lam n x (func ty)
+  map func (Pi n x ty) = Pi n x (func ty)
+  map func (PVar n ty) = PVar n (func ty)
   map func (PVTy ty) = PVTy (func ty)
 
 public export
@@ -409,12 +409,12 @@ mutual
   export
   shrinkBinder : Binder (Term vars) -> SubVars newvars vars ->
                  Maybe (Binder (Term newvars))
-  shrinkBinder (Lam p ty) prf
-      = Just (Lam p !(shrinkTerm ty prf))
-  shrinkBinder (Pi p ty) prf
-      = Just (Pi p !(shrinkTerm ty prf))
-  shrinkBinder (PVar ty) prf
-      = Just (PVar !(shrinkTerm ty prf))
+  shrinkBinder (Lam n p ty) prf
+      = Just (Lam n p !(shrinkTerm ty prf))
+  shrinkBinder (Pi n p ty) prf
+      = Just (Pi n p !(shrinkTerm ty prf))
+  shrinkBinder (PVar n ty) prf
+      = Just (PVar n !(shrinkTerm ty prf))
   shrinkBinder (PVTy ty) prf
       = Just (PVTy !(shrinkTerm ty prf))
 
@@ -468,16 +468,16 @@ export
       showApp (Ref _ n) [] = show n
       showApp (Meta n args) []
           = "?" ++ show n ++ "_" ++ show args
-      showApp (Bind x (Lam p ty) sc) []
+      showApp (Bind x (Lam n p ty) sc) []
           = "Bind" ++ show x ++ " lam " ++ " " ++ show ty ++
             " => " ++ show sc
-      showApp (Bind x (Pi Explicit ty) sc) []
+      showApp (Bind x (Pi n Explicit ty) sc) []
           = "(bind " ++ show x ++ " (pi exp " ++ show ty ++
             ") -> " ++ show sc ++ ")"
-      showApp (Bind x (Pi Implicit ty) sc) []
+      showApp (Bind x (Pi n Implicit ty) sc) []
           = "{bind" ++ show x ++ " pi imp " ++ show ty ++
             "} -> " ++ show sc
-      showApp (Bind x (PVar ty) sc) []
+      showApp (Bind x (PVar n ty) sc) []
           = "bind pat " ++ show x ++ " pvar " ++ show ty ++
             " => " ++ show sc
       showApp (Bind x (PVTy ty) sc) []

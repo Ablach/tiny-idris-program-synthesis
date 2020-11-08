@@ -319,29 +319,11 @@ mutual
       = do defs <- get Ctxt 
            if !(convert defs env (NApp f args) tm)
               then pure success
-              else do coreLift $ putStrLn ("postponing ")
-                      sho f args tm 
-                      postpone env (NApp f args) tm
-    where 
-      sho : {vars : _} -> NHead vars -> List (Closure vars) -> NF vars -> Core ()
-      sho a b c = do 
-        case a of 
-             (NLocal idx p) => coreLift $ putStrLn $ "local " 
-             (NRef x y) => coreLift $ putStrLn $ "ref to " ++ show y
-             (NMeta x xs) => coreLift $ putStrLn $ "Meta " ++ show x
-        traverse_ (\ (MkClosure d e f) => coreLift $ putStrLn $ show f) b
-        defs <- get Ctxt
-        case c of 
-             (NBind x y g) => coreLift $ putStrLn $ "binder " ++ show x
-             (NApp x xs) => coreLift $ putStrLn "napp"
-             (NDCon x tag arity xs) => coreLift $ putStrLn $ "dcon " ++ show x
-             (NTCon x tag arity xs) => coreLift $ putStrLn $ "tcon " ++ show x
-             NType => coreLift $ putStrLn "ty"
-             NErased => coreLift $ putStrLn "erased"
-        coreLift $ putStrLn "---------------------------------------"
-  -- This gives the minimal rules for unification of constructor forms,
-  -- solving metavariables in constructor arguments. There's more to do in
-  -- general!
+              else postpone env (NApp f args) tm
+
+ -- This gives the minimal rules for unification of constructor forms,
+ -- solving metavariables in constructor arguments. There's more to do in
+ -- general!
   export
   Unify NF where
     -- If we have two pi binders, check the arguments and scope

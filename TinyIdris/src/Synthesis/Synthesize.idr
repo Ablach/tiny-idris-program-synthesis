@@ -42,7 +42,7 @@ showCs (y :: xs) x
      case c of 
         Nothing => coreLift $ putStrLn ""
         (Just (MkConstraint env z w)) =>
-           coreLift $ putStrLn $ "constraint " ++ show z ++ " = " ++ show z
+           coreLift $ putStrLn $ "constraint " ++ show z ++ " = " ++ show w
         (Just (MkSeqConstraint env ys zs)) => coreLift $ putStrLn "seq con"
         (Just Resolved) => coreLift $ putStrLn "resolved"
      showCs xs x
@@ -111,13 +111,23 @@ synthesize d env (App tf ta)
  be getting the values of the local variables and using those as constraints 
  for the synthesis. 
 -}
-= do let (fn , args) = getFnArgs (App tf ta)
+= do let ((Ref (TyCon _ _) n) , args) = getFnArgs (App tf ta)
+      | _ => pure (Left $ Impossible "Synthesize Application return of getFnArgs")
      let usable = getUsableEnv [] env 
      coreLift $ putStrLn "-----------------"
-     coreLift $ putStrLn $ "The type is " ++ show fn
+     coreLift $ putStrLn $ "The type is " ++ show n
      coreLift $ putStrLn $ "The args are " ++ concat (intersperse " " (map show args))
      coreLift $ putStrLn "-----------------"
-     tryUnify env usable (App tf ta)    
+     Left _ <- tryUnify env usable (App tf ta)
+      | Right ts => pure $ Right ts
+     -- now that we've failed to simply pick something from the local env we need to start
+     -- thinking, look at the data constructors and see first if we can synthesize them
+     defs <- get Ctxt
+     Just def <- lookupDef n defs
+      | _ => pure (Left $ Impossible "Synthesize Application no definition")
+     let (TCon _ _ datacons) = definition def
+      | _ => pure (Left $ Impossible "Synthesize Application not tcon")
+     ?fin
 
 synthesize _ _ tm 
 -- we shouldn't really be given anything else  
@@ -129,7 +139,7 @@ synthesize _ _ tm
       (Bind x y scope) => coreLift $ putStrLn "bind not pi"
       TType => coreLift $ putStrLn "ty"
       Erased => coreLift $ putStrLn "erased"
-      _ => coreLift $ putStrLn "app?"
+      _ => coreLift $ putStrLn "app"
      coreLift $ putStrLn $ show tm
      pure (Left $ Impossible "synthesize _ tm")
 
@@ -145,7 +155,7 @@ synthesize_single n =
   do defs <- get Ctxt
      Just def <- lookupDef n defs
       | _ => pure (Left $ NotInContext n)
-     (MetaVar vs e retTy)  <- pure $ definition def 
+     let (MetaVar vs e retTy) = definition def 
       | _ => pure (Left $ AlreadyDefined $ type def) 
      o <- newRef UnifyFail False
      Right d <- synthesize {vars = vs} 10 e retTy

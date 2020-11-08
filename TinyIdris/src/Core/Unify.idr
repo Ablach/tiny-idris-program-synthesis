@@ -290,10 +290,10 @@ mutual
              NF vars ->
              Core UnifyResult
   unifyApp env (NMeta n margs) fargs tmnf
-      = do let args = margs ++ fargs
+      = do let args = margs ++ fargs 
            case !(patternEnv env args) of
-                Nothing =>
-                    -- not in pattern form so postpone
+                Nothing => 
+                    -- not in pattern form so postpone 
                     postpone env (NApp (NMeta n margs) fargs) tmnf
                 Just (newvars ** (locs, submv)) =>
                     -- In pattern form, using the 'submv' fragment of the
@@ -303,7 +303,7 @@ mutual
                        -- metavariable's environment
                        defs <- get Ctxt
                        empty <- clearDefs defs
-                       tm <- quote empty env tmnf
+                       tm <- quote empty env tmnf 
                        case shrinkTerm tm submv of
                             Nothing => 
                               -- Not well scoped, but it might be if we
@@ -315,12 +315,30 @@ mutual
                                     instantiate env n gdef locs stm
                                     pure solvedHole
 
-  unifyApp env f args tm
-      = do defs <- get Ctxt
+  unifyApp {vars = vars} env f args tm
+      = do defs <- get Ctxt 
            if !(convert defs env (NApp f args) tm)
               then pure success
-              else postpone env (NApp f args) tm
-
+              else do coreLift $ putStrLn ("postponing ")
+                      sho f args tm 
+                      postpone env (NApp f args) tm
+    where 
+      sho : {vars : _} -> NHead vars -> List (Closure vars) -> NF vars -> Core ()
+      sho a b c = do 
+        case a of 
+             (NLocal idx p) => coreLift $ putStrLn $ "local " 
+             (NRef x y) => coreLift $ putStrLn $ "ref to " ++ show y
+             (NMeta x xs) => coreLift $ putStrLn $ "Meta " ++ show x
+        traverse_ (\ (MkClosure d e f) => coreLift $ putStrLn $ show f) b
+        defs <- get Ctxt
+        case c of 
+             (NBind x y g) => coreLift $ putStrLn $ "binder " ++ show x
+             (NApp x xs) => coreLift $ putStrLn "napp"
+             (NDCon x tag arity xs) => coreLift $ putStrLn $ "dcon " ++ show x
+             (NTCon x tag arity xs) => coreLift $ putStrLn $ "tcon " ++ show x
+             NType => coreLift $ putStrLn "ty"
+             NErased => coreLift $ putStrLn "erased"
+        coreLift $ putStrLn "---------------------------------------"
   -- This gives the minimal rules for unification of constructor forms,
   -- solving metavariables in constructor arguments. There's more to do in
   -- general!

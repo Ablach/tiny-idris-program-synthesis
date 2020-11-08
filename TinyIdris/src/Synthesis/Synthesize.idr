@@ -23,67 +23,103 @@ import Data.Maybe
 import Data.Either
 import Data.SortedMap
 
+record Search where
+  constructor mkSearch
+  topLevel : Term vars
+  depth : Nat 
+
+data UnifyFail : Type where
+
+result : {vars : _} -> List (Term vars) -> Maybe (Term vars)
+result [] = Nothing
+result (x :: xs) = Just x
+
+
+showCs : List Int -> SortedMap Int Constraint -> Core ()
+showCs [] x = coreLift $ putStrLn "No more constraints"
+showCs (y :: xs) x 
+= do let c = lookup y x
+     case c of 
+        Nothing => coreLift $ putStrLn ""
+        (Just (MkConstraint env z w)) =>
+           coreLift $ putStrLn $ "constraint " ++ show z ++ " = " ++ show z
+        (Just (MkSeqConstraint env ys zs)) => coreLift $ putStrLn "seq con"
+        (Just Resolved) => coreLift $ putStrLn "resolved"
+     showCs xs x
+
 tryUnify : {vars : _} ->
            {auto c : Ref Ctxt Defs} ->
            {auto u : Ref UST UState} ->
+           {auto o : Ref UnifyFail Bool} ->
            Env Term vars ->
            List (Term vars) ->
            Term vars -> 
-           Core (Either SynthErr (Term vars))
+           Core (Either SynthErr (List (Term vars)))
 tryUnify env ((Local idx p) :: xs) t 
 = do coreLift $ putStrLn $ "unifying " ++ "with " ++ show t
      let bd = getBinder p env
      let b = binderType bd
      coreLift $ putStrLn $ "term inside binder : " ++ show b
-     ures <- unify env b t
+     ures <- catch (unify env b t) (\ err => do put UnifyFail True
+                                                pure $ MkUnifyResult [] False)
+     False <- get UnifyFail
+      | _ => do put UnifyFail False ; coreLift $ putStrLn "Unification failed" ; tryUnify env xs t
      case constraints ures of 
-       [] => pure (Right (Local idx p))
-       (y :: ys) => do ?dsa 
-                       tryUnify env xs t
+      [] => do Right rest <- tryUnify env xs t
+                 | _ => pure (Right [Local idx p])
+               pure (Right $ [Local idx p] ++ rest)  
+         
+      (y :: ys) => do ust <- get UST
+                      let cs = constraints ust
+                      showCs (y :: ys) cs
+                      tryUnify env xs t
+
 tryUnify env (_ :: xs) t = pure (Left $ Impossible "tryunify _ :: xs")
 tryUnify env [] t = pure (Left NoMatch)
 
 synthesize : {vars : _} -> 
              {auto c : Ref Ctxt Defs} ->
              {auto u : Ref UST UState} ->  
+             {auto o : Ref UnifyFail Bool} ->
+             Nat ->
              Env Term vars -> 
              Term vars ->
-             Core (Either SynthErr (Term vars))
-synthesize env (Ref (TyCon tag arity) n)  
+             Core (Either SynthErr (List (Term vars)))
+
+synthesize d env (Ref (TyCon tag arity) n)  
 -- rescope our current variables and try and unify any of them 
 -- with our type
 = do let usable = getUsableEnv [] env 
      tryUnify env usable (Ref (TyCon tag arity) n)  
-synthesize env (Bind n (Pi x y z) sc)
+
+synthesize d env (Bind n (Pi x y z) sc)
 -- if we must synthesize a binder then it must be a pi, in which case
 -- make a lambda taking in that argument then synthesize the scope
 = do coreLift $ putStrLn "Entering binder"
-     Right tm <- synthesize ((Lam n y z) :: env) sc
+     Right ts <- synthesize d ((Lam n y z) :: env) sc
       | Left err  => pure (Left err)
-     pure $ Right (Bind n (Lam n y z) tm)
-synthesize env (App tf ta) 
+     pure $ Right $ map (\ tm => (Bind n (Lam n y z) tm)) ts
+
+synthesize d env (App tf ta) 
 {-
  could be an application ie Vect N e is applying N and e to Vect
  synthesize the args, then synth the function, and return an 
  application of the two, this approach won't work, since the 
  thing we get out of the application should be the type? 
- 
- the argument is a[2] -- a[2] is a local
- the argument is (add Z m[1]) -- another app
- unifying with Vect -- ref tycon
- term inside binder : (Vect m[1] a[2])
 
  we should be constructing a term of the final reference, we should
  be getting the values of the local variables and using those as constraints 
  for the synthesis. 
-
-
 -}
-= do coreLift $ putStrLn $ "the argument is " ++ show ta
-     Right f <- synthesize env tf
-      | Left err => pure (Left err)
-     pure (Left NoMatch)
-synthesize _ tm 
+= do let (fn , args) = getFnArgs (App tf ta)
+     let usable = getUsableEnv [] env 
+     coreLift $ putStrLn "-----------------"
+     coreLift $ putStrLn $ "The type is " ++ show fn
+     coreLift $ putStrLn $ "The args are " ++ concat (intersperse " " (map show args))
+     coreLift $ putStrLn "-----------------"
+     tryUnify env usable (App tf ta)    
+
+synthesize _ _ tm 
 -- we shouldn't really be given anything else  
 -- could possibly be handled nicer
 = do case tm of
@@ -111,8 +147,11 @@ synthesize_single n =
       | _ => pure (Left $ NotInContext n)
      (MetaVar vs e retTy)  <- pure $ definition def 
       | _ => pure (Left $ AlreadyDefined $ type def) 
-     Right d <- synthesize {vars = vs} e retTy
+     o <- newRef UnifyFail False
+     Right d <- synthesize {vars = vs} 10 e retTy
       | Left err => pure $ Left err 
-     pure (Right $ resugar $ unelab e d) 
+     let Just t = result d
+      | Nothing => pure $ Left NoMatch
+     pure (Right $ resugar $ unelab e t)
      
 

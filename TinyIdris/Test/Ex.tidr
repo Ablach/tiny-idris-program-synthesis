@@ -34,13 +34,13 @@ pat n : Nat =>
 
 idBN : Nat -> Nat -> Nat 
 pat n : Nat =>
-	idN n = ?t2
+	idN n = ?t2 -- fail, outputs n should be \ n' => n
 
 
 vapp : (a : _) -> (n : _) -> (m : _) -> Vect n a -> Vect m a -> Vect (add n m) a
 pat a : Type , m : Nat , ys : Vect m a =>
-	vapp a Z m (VNil a) ys = ?t3
+	vapp a Z m (VNil a) ys = ?t3 -- pass
 pat a : Type , n : Nat , x : a , xs : Vect n a, m : Nat , ys : Vect m a =>
     	vapp a (S n) m (VCons a n x xs) ys
-        	= ?t4
+        	= ?t4 -- no match
 

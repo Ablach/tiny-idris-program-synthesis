@@ -66,7 +66,7 @@ checkTerm env (IVar n) exp
                 Just gdef <- lookupDef n defs
                      | Nothing => throw (UndefinedName n)
                 let nt = case definition gdef of
-                              DCon t a => DataCon t a
+                              DCon t a as => DataCon t a
                               TCon t a ds => TyCon t a
                               _ => Func
                 checkExp env (Ref nt n) (gnf env (embed (type gdef))) exp

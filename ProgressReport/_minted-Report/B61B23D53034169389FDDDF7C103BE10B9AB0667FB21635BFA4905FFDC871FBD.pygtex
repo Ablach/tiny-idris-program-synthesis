@@ -1,0 +1,27 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k+kr}{module} \PYG{n+nn}{Synthesis.Unelab}
+
+\PYG{k+kr}{import} \PYG{n+nn}{TTImp.TTImp}
+\PYG{k+kr}{import} \PYG{n+nn}{Core.TT}
+\PYG{k+kr}{import} \PYG{n+nn}{Core.Context}
+\PYG{k+kr}{import} \PYG{n+nn}{Core.Env}
+\PYG{k+kr}{import} \PYG{n+nn}{Core.Core}
+
+export
+\PYG{n+nf}{unelab} \PYG{o+ow}{:} \PYG{o+ow}{\PYGZob{}}vars \PYG{o+ow}{:} \PYG{k+kr}{\PYGZus{}}\PYG{o+ow}{\PYGZcb{}} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{o+ow}{\PYGZob{}}\PYG{k+kr}{auto} c \PYG{o+ow}{:} \PYG{k+kt}{Ref} \PYG{k+kt}{Ctxt} \PYG{k+kt}{Defs}\PYG{o+ow}{\PYGZcb{}} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}}
+		 \PYG{k+kt}{Env} \PYG{k+kt}{Term} vars \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{Term} vars \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{RawImp}
+unelab env \PYG{o+ow}{(}\PYG{k+kt}{Local} idx prf\PYG{o+ow}{)} \PYG{o+ow}{=} \PYG{k+kt}{IVar} \PYG{o+ow}{(}nameAt idx prf\PYG{o+ow}{)}
+unelab env \PYG{o+ow}{(}\PYG{k+kt}{Ref} nty n\PYG{o+ow}{)} \PYG{o+ow}{=} \PYG{k+kt}{IVar} n
+unelab env \PYG{o+ow}{(}\PYG{k+kt}{Meta} n ts\PYG{o+ow}{)} \PYG{o+ow}{=} \PYG{k+kt}{IHole} n
+unelab env \PYG{o+ow}{(}\PYG{k+kt}{Bind} n \PYG{o+ow}{(}\PYG{k+kt}{Lam} nm pinfo tm\PYG{o+ow}{)} scope\PYG{o+ow}{)}
+  \PYG{o+ow}{=} \PYG{k+kt}{ILam} pinfo \PYG{o+ow}{(}\PYG{k+kt}{Just} n\PYG{o+ow}{)} \PYG{o+ow}{(}unelab env tm\PYG{o+ow}{)} \PYG{o+ow}{(}unelab \PYG{o+ow}{((}\PYG{k+kt}{Lam} nm pinfo tm\PYG{o+ow}{)} \PYG{o+ow}{::} env\PYG{o+ow}{)} scope\PYG{o+ow}{)}
+unelab env \PYG{o+ow}{(}\PYG{k+kt}{Bind} n \PYG{o+ow}{(}\PYG{k+kt}{Pi} nm \PYG{k+kt}{Implicit} tm\PYG{o+ow}{)} scope\PYG{o+ow}{)} \PYG{o+ow}{=} \PYG{k+kt}{Implicit}
+unelab env \PYG{o+ow}{(}\PYG{k+kt}{Bind} n \PYG{o+ow}{(}\PYG{k+kt}{Pi} nm \PYG{k+kt}{Explicit} tm\PYG{o+ow}{)} scope\PYG{o+ow}{)}
+  \PYG{o+ow}{=} \PYG{k+kt}{IPi} \PYG{k+kt}{Explicit} \PYG{o+ow}{(}\PYG{k+kt}{Just} n\PYG{o+ow}{)} \PYG{o+ow}{(}unelab env tm\PYG{o+ow}{)} \PYG{o+ow}{(}unelab \PYG{o+ow}{((}\PYG{k+kt}{Pi} nm \PYG{k+kt}{Explicit} tm\PYG{o+ow}{)} \PYG{o+ow}{::} env\PYG{o+ow}{)} scope\PYG{o+ow}{)}
+unelab env \PYG{o+ow}{(}\PYG{k+kt}{Bind} x \PYG{o+ow}{(}\PYG{k+kt}{PVar} nm y\PYG{o+ow}{)} scope\PYG{o+ow}{)}
+  \PYG{o+ow}{=} \PYG{k+kt}{IPatvar} x \PYG{o+ow}{(}unelab env y\PYG{o+ow}{)} \PYG{o+ow}{(}unelab \PYG{o+ow}{((}\PYG{k+kt}{PVar} nm y\PYG{o+ow}{)} \PYG{o+ow}{::} env\PYG{o+ow}{)} scope\PYG{o+ow}{)}
+unelab env \PYG{o+ow}{(}\PYG{k+kt}{Bind} x \PYG{o+ow}{(}\PYG{k+kt}{PVTy} y\PYG{o+ow}{)} scope\PYG{o+ow}{)} \PYG{o+ow}{=} \PYG{k+kt}{IType}
+unelab env \PYG{o+ow}{(}\PYG{k+kt}{App} x y\PYG{o+ow}{)} \PYG{o+ow}{=} \PYG{k+kt}{IApp} \PYG{o+ow}{(}unelab env x\PYG{o+ow}{)} \PYG{o+ow}{(}unelab env y\PYG{o+ow}{)}
+unelab env \PYG{k+kt}{TType} \PYG{o+ow}{=} \PYG{k+kt}{IType}
+unelab env \PYG{k+kt}{Erased} \PYG{o+ow}{=} \PYG{k+kt}{Implicit}
+\end{Verbatim}

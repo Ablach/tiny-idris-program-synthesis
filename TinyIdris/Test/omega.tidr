@@ -1,0 +1,6 @@
+data Bad : Type where
+	B : Bad
+
+map : Bad -> Bad
+pat n : Bad =>
+	map n = map n	

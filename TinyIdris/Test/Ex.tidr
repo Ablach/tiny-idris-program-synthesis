@@ -34,7 +34,7 @@ pat n : Nat =>
 
 idBN : Nat -> Nat -> Nat 
 pat n : Nat =>
-	idN n = ?t2 -- fail, outputs n should be \ n' => n
+	idBN n = ?t2 -- fail, outputs n should be \ n' => n
 
 
 vapp : (a : _) -> (n : _) -> (m : _) -> Vect n a -> Vect m a -> Vect (add n m) a

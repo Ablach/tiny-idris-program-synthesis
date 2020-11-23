@@ -1,0 +1,52 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k+kr}{module} \PYG{n+nn}{Synthesis.Resugar}
+
+\PYG{k+kr}{import} \PYG{n+nn}{Data.Strings}
+
+\PYG{k+kr}{import} \PYG{n+nn}{TTImp.TTImp}
+
+\PYG{k+kr}{import} \PYG{n+nn}{Core.TT}
+
+
+\PYG{k+kr}{mutual}
+\PYG{n+nf}{resugarPat} \PYG{o+ow}{:} \PYG{k+kt}{Name} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}}
+			 \PYG{o+ow}{(}pat \PYG{o+ow}{:} \PYG{k+kt}{RawImp}\PYG{o+ow}{)} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}}
+			 \PYG{o+ow}{(}scope \PYG{o+ow}{:} \PYG{k+kt}{RawImp}\PYG{o+ow}{)} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}}
+			 \PYG{o+ow}{(}first \PYG{o+ow}{:} \PYG{k+kt}{Bool}\PYG{o+ow}{)} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}}
+			 \PYG{k+kt}{String}
+resugarPat x pat scope \PYG{k+kt}{True}
+  \PYG{o+ow}{=} \PYG{l+s}{\PYGZdq{}pat \PYGZdq{}} \PYG{o+ow}{++} resugarPat x pat scope \PYG{k+kt}{False}
+resugarPat x pat \PYG{o+ow}{(}\PYG{k+kt}{IPatvar} y ty scope\PYG{o+ow}{)} \PYG{k+kt}{False}
+  \PYG{o+ow}{=} show x \PYG{o+ow}{++} \PYG{l+s}{\PYGZdq{} : \PYGZdq{}} \PYG{o+ow}{++} resugar pat \PYG{o+ow}{++} \PYG{l+s}{\PYGZdq{} , \PYGZdq{}} \PYG{o+ow}{++} resugarPat y ty scope \PYG{k+kt}{False}
+resugarPat x pat scope \PYG{k+kt}{False}
+  \PYG{o+ow}{=} show x \PYG{o+ow}{++} \PYG{l+s}{\PYGZdq{} : \PYGZdq{}} \PYG{o+ow}{++} resugar pat \PYG{o+ow}{++} \PYG{l+s}{\PYGZdq{} =\PYGZgt{} \PYGZdq{}} \PYG{o+ow}{++} resugar scope
+
+\PYG{n+nf}{resugarLam} \PYG{o+ow}{:} \PYG{o+ow}{(}\PYG{k+kt}{Maybe} \PYG{k+kt}{Name}\PYG{o+ow}{)} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}}
+			 \PYG{o+ow}{(}scope \PYG{o+ow}{:} \PYG{k+kt}{RawImp}\PYG{o+ow}{)} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}}
+			 \PYG{o+ow}{(}first \PYG{o+ow}{:} \PYG{k+kt}{Bool}\PYG{o+ow}{)} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}}
+			 \PYG{k+kt}{String}
+resugarLam x scope \PYG{k+kt}{True}
+  \PYG{o+ow}{=} \PYG{l+s}{\PYGZdq{}}\PYG{l+s+se}{\PYGZbs{}\PYGZbs{}}\PYG{l+s}{ \PYGZdq{}} \PYG{o+ow}{++} resugarLam x scope \PYG{k+kt}{False}
+resugarLam \PYG{k+kt}{Nothing} \PYG{o+ow}{(}\PYG{k+kt}{ILam} y z argTy scope\PYG{o+ow}{)} \PYG{k+kt}{False}
+  \PYG{o+ow}{=} \PYG{l+s}{\PYGZdq{} \PYGZus{} \PYGZdq{}} \PYG{o+ow}{++} resugarLam z scope \PYG{k+kt}{False}
+resugarLam \PYG{o+ow}{(}\PYG{k+kt}{Just} x\PYG{o+ow}{)} \PYG{o+ow}{(}\PYG{k+kt}{ILam} y z argTy scope\PYG{o+ow}{)} \PYG{k+kt}{False}
+  \PYG{o+ow}{=} show x \PYG{o+ow}{++} \PYG{l+s}{\PYGZdq{} \PYGZdq{}} \PYG{o+ow}{++} resugarLam z scope \PYG{k+kt}{False}
+resugarLam \PYG{k+kt}{Nothing} scope \PYG{k+kt}{False}
+  \PYG{o+ow}{=} \PYG{l+s}{\PYGZdq{} \PYGZus{} =\PYGZgt{} \PYGZdq{}} \PYG{o+ow}{++} resugar scope
+resugarLam \PYG{o+ow}{(}\PYG{k+kt}{Just} x\PYG{o+ow}{)} scope \PYG{k+kt}{False}
+  \PYG{o+ow}{=} show x \PYG{o+ow}{++} \PYG{l+s}{\PYGZdq{} =\PYGZgt{} \PYGZdq{}} \PYG{o+ow}{++} resugar scope
+
+export
+\PYG{n+nf}{resugar} \PYG{o+ow}{:} \PYG{k+kt}{RawImp} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{String}
+resugar \PYG{o+ow}{(}\PYG{k+kt}{IVar} x\PYG{o+ow}{)} \PYG{o+ow}{=} show x
+resugar \PYG{o+ow}{(}\PYG{k+kt}{IPi} x \PYG{k+kt}{Nothing} argTy scope\PYG{o+ow}{)}
+  \PYG{o+ow}{=} \PYG{l+s}{\PYGZdq{} ( \PYGZus{} : \PYGZdq{}} \PYG{o+ow}{++} resugar argTy \PYG{o+ow}{++} \PYG{l+s}{\PYGZdq{}) \PYGZhy{}\PYGZgt{} \PYGZdq{}} \PYG{o+ow}{++} resugar scope
+resugar \PYG{o+ow}{(}\PYG{k+kt}{IPi} x \PYG{o+ow}{(}\PYG{k+kt}{Just} y\PYG{o+ow}{)} argTy scope\PYG{o+ow}{)}
+  \PYG{o+ow}{=} \PYG{l+s}{\PYGZdq{} ( \PYGZdq{}} \PYG{o+ow}{++} show y \PYG{o+ow}{++} \PYG{l+s}{\PYGZdq{} : \PYGZdq{}} \PYG{o+ow}{++} resugar argTy \PYG{o+ow}{++} \PYG{l+s}{\PYGZdq{} ) \PYGZhy{}\PYGZgt{} \PYGZdq{}} \PYG{o+ow}{++} resugar scope
+resugar \PYG{o+ow}{(}\PYG{k+kt}{ILam} x y argTy scope\PYG{o+ow}{)} \PYG{o+ow}{=} resugarLam y scope \PYG{k+kt}{True}
+resugar \PYG{o+ow}{(}\PYG{k+kt}{IPatvar} x ty scope\PYG{o+ow}{)} \PYG{o+ow}{=} resugarPat x ty scope \PYG{k+kt}{True}
+resugar \PYG{o+ow}{(}\PYG{k+kt}{IApp} x y\PYG{o+ow}{)} \PYG{o+ow}{=} \PYG{l+s}{\PYGZdq{}( \PYGZdq{}} \PYG{o+ow}{++} \PYG{o+ow}{(}resugar x\PYG{o+ow}{)} \PYG{o+ow}{++} \PYG{l+s}{\PYGZdq{} \PYGZdq{}} \PYG{o+ow}{++} resugar y \PYG{o+ow}{++} \PYG{l+s}{\PYGZdq{} )\PYGZdq{}}
+resugar \PYG{o+ow}{(}\PYG{k+kt}{IHole} x\PYG{o+ow}{)} \PYG{o+ow}{=} \PYG{l+s}{\PYGZdq{}?\PYGZdq{}} \PYG{o+ow}{++} show x
+resugar \PYG{k+kt}{Implicit} \PYG{o+ow}{=} \PYG{l+s}{\PYGZdq{}\PYGZus{}\PYGZdq{}}
+resugar \PYG{k+kt}{IType} \PYG{o+ow}{=} \PYG{l+s}{\PYGZdq{} : \PYGZdq{}}
+\end{Verbatim}

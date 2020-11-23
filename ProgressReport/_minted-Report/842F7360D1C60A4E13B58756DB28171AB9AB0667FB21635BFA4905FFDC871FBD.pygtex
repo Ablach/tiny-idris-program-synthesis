@@ -1,0 +1,5 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k+kr}{data} \PYG{k+kt}{Env} \PYG{o+ow}{:} \PYG{o+ow}{(}tm \PYG{o+ow}{:} \PYG{k+kt}{List} \PYG{k+kt}{Name} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{Type}\PYG{o+ow}{)} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{List} \PYG{k+kt}{Name} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{Type} \PYG{k+kr}{where}
+	 \PYG{n+nf}{Nil} \PYG{o+ow}{:} \PYG{k+kt}{Env} tm \PYG{o+ow}{[]}
+	 \PYG{o+ow}{(::)} \PYG{o+ow}{:} \PYG{k+kt}{Binder} \PYG{o+ow}{(}tm vars\PYG{o+ow}{)} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{Env} tm vars \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{Env} tm \PYG{o+ow}{(}x \PYG{o+ow}{::} vars\PYG{o+ow}{)}
+\end{Verbatim}

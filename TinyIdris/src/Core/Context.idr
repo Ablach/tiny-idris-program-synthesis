@@ -12,7 +12,7 @@ data Def : Type where
     None : Def -- Not yet defined
     PMDef : (args : List Name) -> (treeCT : CaseTree args) ->
             Def -- Ordinary function definition
-    DCon : (tag : Int) -> (arity : Nat) -> Def -- data constructor
+    DCon : (tag : Int) -> (arity : Nat) -> (ty : Term []) -> Def -- data constructor
     TCon : (tag : Int) -> (arity : Nat) -> (datacons : List Name) -> Def
     Hole : Def
     MetaVar : (vars : List Name) ->  Env Term vars -> (retTy : Term vars) -> Def

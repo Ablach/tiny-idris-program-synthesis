@@ -1,0 +1,9 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k+kr}{data} \PYG{k+kt}{List} \PYG{o+ow}{:} \PYG{k+kt}{Type} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{Type} \PYG{k+kr}{where}
+  \PYG{n+nf}{Nil}  \PYG{o+ow}{:} \PYG{k+kt}{List} a
+  \PYG{o+ow}{(::)} \PYG{o+ow}{:} \PYG{o+ow}{\PYGZob{}}a \PYG{o+ow}{:} \PYG{k+kt}{Type}\PYG{o+ow}{\PYGZcb{}} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} a \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{List} a \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{List} a
+
+\PYG{n+nf}{map} \PYG{o+ow}{:} \PYG{o+ow}{(}f \PYG{o+ow}{:} a \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} b\PYG{o+ow}{)} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{o+ow}{(}xs \PYG{o+ow}{:} \PYG{k+kt}{List} a\PYG{o+ow}{)} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{List} b
+map f \PYG{o+ow}{[]} \PYG{o+ow}{=} \PYG{o+ow}{?}map\PYGZus{}rhs\PYGZus{}1
+map f \PYG{o+ow}{(}x \PYG{o+ow}{::} xs\PYG{o+ow}{)} \PYG{o+ow}{=} \PYG{o+ow}{?}map\PYGZus{}rhs\PYGZus{}1
+\end{Verbatim}

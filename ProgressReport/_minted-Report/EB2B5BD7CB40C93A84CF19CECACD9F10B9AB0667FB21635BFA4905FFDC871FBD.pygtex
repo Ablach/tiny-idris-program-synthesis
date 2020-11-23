@@ -1,0 +1,42 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k+kr}{module} \PYG{n+nn}{Synthesis.Rescope}
+
+\PYG{k+kr}{import} \PYG{n+nn}{Core.Env}
+\PYG{k+kr}{import} \PYG{n+nn}{Core.TT}
+\PYG{k+kr}{import} \PYG{n+nn}{Core.Core}
+
+\PYG{k+kr}{import} \PYG{n+nn}{Data.List}
+
+\PYG{n+nf}{givenName} \PYG{o+ow}{:} \PYG{k+kt}{Name} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{Bool}
+givenName \PYG{o+ow}{(}\PYG{k+kt}{UN} x\PYG{o+ow}{)} \PYG{o+ow}{=} \PYG{k+kt}{True}
+givenName \PYG{k+kr}{\PYGZus{}}      \PYG{o+ow}{=} \PYG{k+kt}{False}
+
+\PYG{n+nf}{weakenMore} \PYG{o+ow}{:} \PYG{o+ow}{(}xs \PYG{o+ow}{:} \PYG{k+kt}{List} \PYG{k+kt}{Name}\PYG{o+ow}{)} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{o+ow}{(}p \PYG{o+ow}{:} \PYG{k+kt}{IsVar} n i top\PYG{o+ow}{)} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{IsVar} n \PYG{o+ow}{(}length xs \PYG{o+ow}{+} i\PYG{o+ow}{)} \PYG{o+ow}{(}xs \PYG{o+ow}{++} top\PYG{o+ow}{)}
+weakenMore \PYG{o+ow}{[]} p \PYG{o+ow}{=} p
+weakenMore \PYG{o+ow}{(}x \PYG{o+ow}{::} xs\PYG{o+ow}{)} p \PYG{o+ow}{=} \PYG{k+kt}{Later} \PYG{o+ow}{(}weakenMore xs p\PYG{o+ow}{)}
+
+\PYG{n+nf}{weakenNS} \PYG{o+ow}{:} \PYG{o+ow}{(}ns \PYG{o+ow}{:} \PYG{k+kt}{List} \PYG{k+kt}{Name}\PYG{o+ow}{)} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{Var} top \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{Var} \PYG{o+ow}{(}ns \PYG{o+ow}{++} top\PYG{o+ow}{)}
+weakenNS \PYG{o+ow}{[]} p                \PYG{o+ow}{=} p
+weakenNS \PYG{o+ow}{(}x \PYG{o+ow}{::} xs\PYG{o+ow}{)} \PYG{o+ow}{(}\PYG{k+kt}{MkVar} p\PYG{o+ow}{)} \PYG{o+ow}{=} \PYG{k+kt}{MkVar} \PYG{o+ow}{(}\PYG{k+kt}{Later} \PYG{o+ow}{\PYGZdl{}} weakenMore xs p\PYG{o+ow}{)}
+
+export
+\PYG{n+nf}{getUsableEnv} \PYG{o+ow}{:} \PYG{o+ow}{\PYGZob{}}vars \PYG{o+ow}{:} \PYG{k+kr}{\PYGZus{}}\PYG{o+ow}{\PYGZcb{}} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}}
+			   \PYG{o+ow}{(}ns \PYG{o+ow}{:} \PYG{k+kt}{List} \PYG{k+kt}{Name}\PYG{o+ow}{)} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}}
+			   \PYG{k+kt}{Env} \PYG{k+kt}{Term} vars \PYG{o+ow}{\PYGZhy{}\PYGZgt{}}
+			   \PYG{k+kt}{List} \PYG{o+ow}{(}\PYG{k+kt}{Term} \PYG{o+ow}{(}ns \PYG{o+ow}{++} vars\PYG{o+ow}{))}
+getUsableEnv \PYG{o+ow}{\PYGZob{}}vars \PYG{o+ow}{=} v \PYG{o+ow}{::} vars\PYG{o+ow}{\PYGZcb{}} ns \PYG{o+ow}{((}\PYG{k+kt}{Lam} n z w\PYG{o+ow}{)} \PYG{o+ow}{::} env\PYG{o+ow}{)}
+\PYG{o+ow}{=} \PYG{k+kr}{let} rest \PYG{o+ow}{=} getUsableEnv \PYG{o+ow}{\PYGZob{}}vars \PYG{o+ow}{=} vars\PYG{o+ow}{\PYGZcb{}} \PYG{o+ow}{(}ns \PYG{o+ow}{++} \PYG{o+ow}{[}v\PYG{o+ow}{])} env
+	  \PYG{k+kt}{MkVar} var \PYG{o+ow}{=} weakenNS ns \PYG{o+ow}{(}\PYG{k+kt}{MkVar} \PYG{k+kt}{First}\PYG{o+ow}{)} \PYG{k+kr}{in}
+   \PYG{k+kr}{if} givenName v
+	 \PYG{k+kr}{then} \PYG{k+kt}{Local} \PYG{k+kr}{\PYGZus{}} var \PYG{o+ow}{::} \PYG{k+kr}{rewrite} appendAssociative ns \PYG{o+ow}{[}v\PYG{o+ow}{]} vars \PYG{k+kr}{in} rest
+	 \PYG{k+kr}{else} \PYG{k+kr}{rewrite} appendAssociative ns \PYG{o+ow}{[}v\PYG{o+ow}{]} vars \PYG{k+kr}{in} rest
+getUsableEnv \PYG{o+ow}{\PYGZob{}}vars \PYG{o+ow}{=} v \PYG{o+ow}{::} vars\PYG{o+ow}{\PYGZcb{}} ns \PYG{o+ow}{((}\PYG{k+kt}{PVar} x z\PYG{o+ow}{)} \PYG{o+ow}{::} env\PYG{o+ow}{)}
+\PYG{o+ow}{=} \PYG{k+kr}{let} rest \PYG{o+ow}{=} getUsableEnv \PYG{o+ow}{\PYGZob{}}vars \PYG{o+ow}{=} vars\PYG{o+ow}{\PYGZcb{}} \PYG{o+ow}{(}ns \PYG{o+ow}{++} \PYG{o+ow}{[}v\PYG{o+ow}{])} env
+	  \PYG{k+kt}{MkVar} var \PYG{o+ow}{=} weakenNS ns \PYG{o+ow}{(}\PYG{k+kt}{MkVar} \PYG{k+kt}{First}\PYG{o+ow}{)} \PYG{k+kr}{in}
+  \PYG{k+kr}{if} givenName v
+	 \PYG{k+kr}{then} \PYG{k+kt}{Local} \PYG{k+kr}{\PYGZus{}} var \PYG{o+ow}{::} \PYG{k+kr}{rewrite} appendAssociative ns \PYG{o+ow}{[}v\PYG{o+ow}{]} vars \PYG{k+kr}{in} rest
+	 \PYG{k+kr}{else} \PYG{k+kr}{rewrite} appendAssociative ns \PYG{o+ow}{[}v\PYG{o+ow}{]} vars \PYG{k+kr}{in} rest
+getUsableEnv \PYG{o+ow}{\PYGZob{}}vars \PYG{o+ow}{=} v \PYG{o+ow}{::} vars\PYG{o+ow}{\PYGZcb{}} ns \PYG{o+ow}{(}\PYG{k+kr}{\PYGZus{}} \PYG{o+ow}{::} env\PYG{o+ow}{)}
+  \PYG{o+ow}{=} \PYG{k+kr}{rewrite} appendAssociative ns \PYG{o+ow}{[}v\PYG{o+ow}{]} vars \PYG{k+kr}{in} getUsableEnv \PYG{o+ow}{(}ns \PYG{o+ow}{++} \PYG{o+ow}{[}v\PYG{o+ow}{])} env
+getUsableEnv \PYG{k+kr}{\PYGZus{}} \PYG{o+ow}{[]} \PYG{o+ow}{=} \PYG{o+ow}{[]}
+\end{Verbatim}

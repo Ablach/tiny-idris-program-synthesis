@@ -1,0 +1,180 @@
+@article{10.1145/2980983.2908093,
+author = {Polikarpova, Nadia and Kuraj, Ivan and Solar-Lezama, Armando},
+title = {Program Synthesis from Polymorphic Refinement Types},
+year = {2016},
+issue_date = {June 2016},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {51},
+number = {6},
+issn = {0362-1340},
+url = {https://doi.org/10.1145/2980983.2908093},
+doi = {10.1145/2980983.2908093},
+abstract = { We present a method for synthesizing recursive functions that provably satisfy a given specification in the form of a polymorphic refinement type. We observe that such specifications are particularly suitable for program synthesis for two reasons. First, they offer a unique combination of expressive power and decidability, which enables automatic verification—and hence synthesis—of nontrivial programs. Second, a type-based specification for a program can often be effectively decomposed into independent specifications for its components, causing the synthesizer to consider fewer component combinations and leading to a combinatorial reduction in the size of the search space. At the core of our synthesis procedure is a newalgorithm for refinement type checking, which supports specification decomposition. We have evaluated our prototype implementation on a large set of synthesis problems and found that it exceeds the state of the art in terms of both scalability and usability. The tool was able to synthesize more complex programs than those reported in prior work (several sorting algorithms and operations on balanced search trees), as well as most of the benchmarks tackled by existing synthesizers, often starting from a more concise and intuitive user input. },
+journal = {SIGPLAN Not.},
+month = jun,
+pages = {522–538},
+numpages = {17},
+keywords = {Program Synthesis, Functional Programming, Refinement Types, Predicate Abstraction}
+}
+
+  
+@article{10.1145/2813885.2738007,
+author = {Osera, Peter-Michael and Zdancewic, Steve},
+title = {Type-and-Example-Directed Program Synthesis},
+year = {2015},
+issue_date = {June 2015},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {50},
+number = {6},
+issn = {0362-1340},
+url = {https://doi.org/10.1145/2813885.2738007},
+doi = {10.1145/2813885.2738007},
+abstract = { This paper presents an algorithm for synthesizing recursive functions that process algebraic datatypes. It is founded on proof-theoretic techniques that exploit both type information and input–output examples to prune the search space. The algorithm uses refinement trees, a data structure that succinctly represents constraints on the shape of generated code. We evaluate the algorithm by using a prototype implementation to synthesize more than 40 benchmarks and several non-trivial larger examples. Our results demonstrate that the approach meets or outperforms the state-of-the-art for this domain, in terms of synthesis time or attainable size of the generated programs. },
+journal = {SIGPLAN Not.},
+month = jun,
+pages = {619–630},
+numpages = {12},
+keywords = {Proof Search, Functional Programming, Type Theory, Program Syn- thesis}
+}
+
+@inproceedings{10.1145/2976022.2976030,
+author = {O'Connor, Liam},
+title = {Applications of Applicative Proof Search},
+year = {2016},
+isbn = {9781450344357},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/2976022.2976030},
+doi = {10.1145/2976022.2976030},
+abstract = { In this paper, we develop a library of typed proof search procedures, and demonstrate their remarkable utility as a mechanism for proof-search and automation. We describe a framework for describing proof-search procedures in Agda, with a library of tactical combinators based on applicative functors. This framework is very general, so we demonstrate the approach with two common applications from the field of software verification: a library for property-based testing in the style of SmallCheck, and the embedding of a basic model checker inside our framework, which we use to verify the correctness of common concurrency algorithms. },
+booktitle = {Proceedings of the 1st International Workshop on Type-Driven Development},
+pages = {43–55},
+numpages = {13},
+keywords = {testing, automation, Agda, proof, concurrency, properties, model checking, critical section},
+location = {Nara, Japan},
+series = {TyDe 2016}
+}
+
+@InProceedings{10.1007/11617990_10,
+author="Lindblad, Fredrik
+and Benke, Marcin",
+editor="Filli{\^a}tre, Jean-Christophe
+and Paulin-Mohring, Christine
+and Werner, Benjamin",
+title="A Tool for Automated Theorem Proving in Agda",
+booktitle="Types for Proofs and Programs",
+year="2006",
+publisher="Springer Berlin Heidelberg",
+address="Berlin, Heidelberg",
+pages="154--169",
+abstract="We present a tool for automated theorem proving in Agda, an implementation of Martin-L{\"o}f's intuitionistic type theory. The tool is intended to facilitate interactive proving by relieving the user from filling in simple but tedious parts of a proof. The proof search is conducted directly in type theory and produces proof terms. Any proof term is verified by the Agda type-checker, which ensures soundness of the tool. Some effort has been spent on trying to produce human readable results, which allows the user to examine the generated proofs. We have tested the tool on examples mainly in the area of (functional) program verification. Most examples we have considered contain induction, and some contain generalisation. The contribution of this work outside the Agda community is to extend the experience of automated proof for intuitionistic type theory.",
+isbn="978-3-540-31429-5"
+}
+
+@InProceedings{10.1007/11617990_10,
+author="Lindblad, Fredrik
+and Benke, Marcin",
+editor="Filli{\^a}tre, Jean-Christophe
+and Paulin-Mohring, Christine
+and Werner, Benjamin",
+title="A Tool for Automated Theorem Proving in Agda",
+booktitle="Types for Proofs and Programs",
+year="2006",
+publisher="Springer Berlin Heidelberg",
+address="Berlin, Heidelberg",
+pages="154--169",
+abstract="We present a tool for automated theorem proving in Agda, an implementation of Martin-L{\"o}f's intuitionistic type theory. The tool is intended to facilitate interactive proving by relieving the user from filling in simple but tedious parts of a proof. The proof search is conducted directly in type theory and produces proof terms. Any proof term is verified by the Agda type-checker, which ensures soundness of the tool. Some effort has been spent on trying to produce human readable results, which allows the user to examine the generated proofs. We have tested the tool on examples mainly in the area of (functional) program verification. Most examples we have considered contain induction, and some contain generalisation. The contribution of this work outside the Agda community is to extend the experience of automated proof for intuitionistic type theory.",
+isbn="978-3-540-31429-5"
+}
+
+@article{10.1145/2544173.2509555,
+author = {Kneuss, Etienne and Kuraj, Ivan and Kuncak, Viktor and Suter, Philippe},
+title = {Synthesis modulo Recursive Functions},
+year = {2013},
+issue_date = {October 2013},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {48},
+number = {10},
+issn = {0362-1340},
+url = {https://doi.org/10.1145/2544173.2509555},
+doi = {10.1145/2544173.2509555},
+abstract = {We describe techniques for synthesis and verification of recursive functional programs over unbounded domains. Our techniques build on top of an algorithm for satisfiability modulo recursive functions, a framework for deductive synthesis, and complete synthesis procedures for algebraic data types. We present new counterexample-guided algorithms for constructing verified programs. We have implemented these algorithms in an integrated environment for interactive verification and synthesis from relational specifications. Our system was able to synthesize a number of useful recursive functions that manipulate unbounded numbers and data structures.},
+journal = {SIGPLAN Not.},
+month = oct,
+pages = {407–426},
+numpages = {20},
+keywords = {satisfiability modulo theories, software synthesis, inductive learning}
+}
+
+@inproceedings{10.1145/3314221.3314602,
+author = {Knoth, Tristan and Wang, Di and Polikarpova, Nadia and Hoffmann, Jan},
+title = {Resource-Guided Program Synthesis},
+year = {2019},
+isbn = {9781450367127},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3314221.3314602},
+doi = {10.1145/3314221.3314602},
+abstract = {This article presents resource-guided synthesis, a technique for synthesizing recursive programs that satisfy both a functional specification and a symbolic resource bound. The technique is type-directed and rests upon a novel type system that combines polymorphic refinement types with potential annotations of automatic amortized resource analysis. The type system enables efficient constraint-based type checking and can express precise refinement-based resource bounds. The proof of type soundness shows that synthesized programs are correct by construction. By tightly integrating program exploration and type checking, the synthesizer can leverage the user-provided resource bound to guide the search, eagerly rejecting incomplete programs that consume too many resources. An implementation in the resource-guided synthesizer ReSyn is used to evaluate the technique on a range of recursive data structure manipulations. The experiments show that ReSyn synthesizes programs that are asymptotically more efficient than those generated by a resource-agnostic synthesizer. Moreover, synthesis with ReSyn is faster than a naive combination of synthesis and resource analysis. ReSyn is also able to generate implementations that have a constant resource consumption for fixed input sizes, which can be used to mitigate side-channel attacks.},
+booktitle = {Proceedings of the 40th ACM SIGPLAN Conference on Programming Language Design and Implementation},
+pages = {253–268},
+numpages = {16},
+keywords = {Program Synthesis, Refinement Types, Automated Amortized Resource Analysis},
+location = {Phoenix, AZ, USA},
+series = {PLDI 2019}
+}
+
+@misc{BibEntry2020Nov,
+	title = {{Changes since Idris 1 {\ifmmode---\else\textemdash\fi} Idris2 0.0 documentation}},
+	year = {2020},
+	month = {Nov},
+	note = {[Online; accessed 22. Nov. 2020]},
+	url = {https://idris2.readthedocs.io/en/latest/updates/updates.html}
+}
+
+@misc{BibEntry2020Nov,
+	title = {{Multiplicities {\ifmmode---\else\textemdash\fi} Idris2 0.0 documentation}},
+	year = {2020},
+	month = {Nov},
+	note = {[Online; accessed 22. Nov. 2020]},
+	url = {https://idris2.readthedocs.io/en/latest/tutorial/multiplicities.html#sect-multiplicities}
+}
+
+@book{10.5555/2788232,
+author = {Nederpelt, Rob and Geuvers, Professor Herman},
+title = {Type Theory and Formal Proof: An Introduction},
+year = {2014},
+isbn = {110703650X},
+publisher = {Cambridge University Press},
+address = {USA},
+edition = {1st},
+abstract = {Type theory is a fast-evolving field at the crossroads of logic, computer science and mathematics. This gentle step-by-step introduction is ideal for graduate students and researchers who need to understand the ins and outs of the mathematical machinery, the role of logical rules therein, the essential contribution of definitions and the decisive nature of well-structured proofs. The authors begin with untyped lambda calculus and proceed to several fundamental type systems, including the well-known and powerful Calculus of Constructions. The book also covers the essence of proof checking and proof development, and the use of dependent type theory to formalise mathematics. The only prerequisite is a basic knowledge of undergraduate mathematics. Carefully chosen examples illustrate the theory throughout. Each chapter ends with a summary of the content, some historical context, suggestions for further reading and a selection of exercises to help readers familiarise themselves with the material.}
+}
+
+@misc{Splv'202020Aug,
+	author = {Edwin Brady},
+	title = {The implementation of Idris 2},
+	journal = {The Scottish Programming Languages and Verification Summer School 2020 },
+	year = {2020},
+	month = {Aug},
+	publisher = {The Scottish Programming Languages and Verification Summer School 2020 },
+	note = {[Online; accessed 22. Aug. 2020]},
+	url = {https://www.youtube.com/watch?v=mFuh_ilAm5E&t=2912s&pbjreload=101}
+}
+
+@InProceedings{10.1007/BFb0014058,
+author="Hurkens, Antonius J. C.",
+editor="Dezani-Ciancaglini, Mariangiola
+and Plotkin, Gordon",
+title="A simplification of Girard's paradox",
+booktitle="Typed Lambda Calculi and Applications",
+year="1995",
+publisher="Springer Berlin Heidelberg",
+address="Berlin, Heidelberg",
+pages="266--278",
+abstract="In 1972 J.-Y. Girard showed that the Burali-Forti paradox can be formalised in the type system U. In 1991 Th. Coquand formalised another paradox in U−. The corresponding proof terms (that have no normal form) are large. We present a shorter term of type ⊥ in the Pure Type System $\lambda$U− and analyse its reduction behaviour. The idea is to construct a universe U and two functions such that a certain equality holds. Using this equality, we prove and disprove that a certain object in U is well-founded.",
+isbn="978-3-540-49178-1"
+}

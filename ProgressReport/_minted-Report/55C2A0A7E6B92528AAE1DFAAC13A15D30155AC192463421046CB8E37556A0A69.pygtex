@@ -1,0 +1,30 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{n}{begin}
+\PYG{n}{do} \PYG{k}{while} \PYG{n}{depth} \PYG{o}{\PYGZgt{}} \PYG{l+m+mi}{0}
+ \PYG{n}{get} \PYG{n}{Locals} \PYG{k+kn}{from} \PYG{n+nn}{Environment}
+  \PYG{n}{If} \PYG{n}{term} \PYG{o}{==} \PYG{n}{Constructor}
+	\PYG{k}{for} \PYG{n}{each} \PYG{n}{data} \PYG{n}{constructor}
+	  \PYG{k}{for} \PYG{n}{each} \PYG{n}{argument}
+		\PYG{n}{attempt} \PYG{n}{synthesis}
+		\PYG{n}{attempt} \PYG{n}{unification}\PYG{p}{,} \PYG{k}{if} \PYG{n}{no} \PYG{n}{constraints} \PYG{n}{then}
+		\PYG{n}{add} \PYG{n}{to} \PYG{n+nb}{list} \PYG{o+ow}{and} \PYG{k}{continue}
+		\PYG{n}{otherwise} \PYG{k}{continue}
+	\PYG{k}{if} \PYG{n}{Result} \PYG{o}{==} \PYG{n}{Empty}
+	  \PYG{n}{For} \PYG{n}{each} \PYG{n}{definition} \PYG{o+ow}{in} \PYG{n}{Context}
+		\PYG{k}{if} \PYG{n}{the} \PYG{k}{return} \PYG{n+nb}{type} \PYG{o}{==} \PYG{n}{goal}
+		  \PYG{k}{for} \PYG{n}{each} \PYG{n}{arg}
+			\PYG{n}{attempt} \PYG{n}{synthesis}
+		  \PYG{k}{if} \PYG{n+nb}{all} \PYG{n}{args} \PYG{n}{synthesized}
+		   \PYG{n}{add} \PYG{n}{application} \PYG{n}{to} \PYG{n}{the} \PYG{n+nb}{list} \PYG{o+ow}{and} \PYG{k}{continue}
+		   \PYG{n}{otherwise} \PYG{k}{continue}
+	  \PYG{k}{if} \PYG{n}{result} \PYG{o}{==} \PYG{n}{empty}
+		\PYG{n}{then} \PYG{n}{fail}
+		\PYG{n}{otherwise} \PYG{k}{return} \PYG{n}{getBest} \PYG{n}{of} \PYG{n}{results}
+	\PYG{n}{If} \PYG{n}{term} \PYG{o}{==} \PYG{n}{Pi} \PYG{n}{binder}
+	   \PYG{n}{extend} \PYG{n}{environment} \PYG{k}{with} \PYG{n}{Lambda} \PYG{n}{of} \PYG{n}{the} \PYG{n}{binder} \PYG{n+nb}{type}
+	   \PYG{n}{synthesize} \PYG{n}{scope} \PYG{o+ow}{in} \PYG{n}{extended} \PYG{n}{environment}
+	\PYG{n}{If} \PYG{n}{term} \PYG{o+ow}{is} \PYG{n}{application}
+	   \PYG{n}{add} \PYG{n}{constraints} \PYG{n}{on} \PYG{n}{goal} \PYG{n+nb}{type}
+	   \PYG{n}{Synthesize} \PYG{n}{function} \PYG{n+nb}{type}
+\PYG{n}{end}
+\end{Verbatim}

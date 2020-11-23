@@ -1,0 +1,5 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k}{def} \PYG{n}{split}\PYG{o}{(}\PYG{n}{lst} \PYG{k}{:} \PYG{k+kt}{List}\PYG{o}{)} \PYG{k}{:} \PYG{o}{(}\PYG{k+kt}{List} \PYG{o}{,} \PYG{k+kt}{List}\PYG{o}{)} \PYG{k}{=} \PYG{n}{choose} \PYG{o}{\PYGZob{}} \PYG{o}{(}\PYG{n}{r} \PYG{k}{:} \PYG{o}{(}\PYG{k+kt}{List} \PYG{o}{,} \PYG{k+kt}{List}\PYG{o}{))} \PYG{k}{=\PYGZgt{}}
+	\PYG{n}{content}\PYG{o}{(}\PYG{n}{lst}\PYG{o}{)} \PYG{o}{==} \PYG{n}{content}\PYG{o}{(}\PYG{n}{r}\PYG{o}{,}\PYG{n}{\PYGZus{}1}\PYG{o}{)} \PYG{o}{++} \PYG{n}{content}\PYG{o}{(}\PYG{n}{r}\PYG{o}{,}\PYG{n}{\PYGZus{}2}\PYG{o}{)}
+\PYG{o}{\PYGZcb{}}
+\end{Verbatim}

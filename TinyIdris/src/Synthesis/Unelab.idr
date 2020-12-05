@@ -5,10 +5,13 @@ import Core.TT
 import Core.Context
 import Core.Env
 import Core.Core
+import Synthesis.Monad
 
 export
 unelab : {vars : _} -> {auto c : Ref Ctxt Defs} -> 
-         Env Term vars -> Term vars -> RawImp
+         Env Term vars -> Search (Term vars) -> Search RawImp
+
+{-
 unelab env (Local idx prf) = IVar (nameAt idx prf)
 unelab env (Ref nty n) = IVar n
 unelab env (Meta n ts) = IHole n
@@ -23,4 +26,4 @@ unelab env (Bind x (PVTy y) scope) = IType
 unelab env (App x y) = IApp (unelab env x) (unelab env y)
 unelab env TType = IType
 unelab env Erased = Implicit
-
+-}

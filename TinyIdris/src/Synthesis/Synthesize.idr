@@ -23,44 +23,68 @@ import Data.Maybe
 import Data.Either
 import Data.SortedMap
 
-synthesise : {vars : _} -> 
-             {auto c : Ref Ctxt Defs} ->
-             Env Term vars -> 
-             Name -> 
-             Core (Search (Term vars))
+printResult : Search String -> String
 
-searchLocals : {vars : _} -> Env Term vars -> Search (Term vars) -> List (Search (Term vars))
+tryUnify : {vars : _} ->
+           {auto c : Ref Ctxt Defs} -> 
+           Env Term vars ->
+           Term vars -> Term vars -> 
+           Core (Search (Term vars))
+tryUnify env a b
+  = do u <- newRef UST ?fds
+       res <- catch (unify env a b) ?dfas
+       ?sfsf
 
-searchFunctions : {vars : _} -> Env Term vars -> Search (Term vars) -> List (Search (Term vars))
 
-attemptDatacons : {vars : _} -> Env Term vars -> Search (Term vars) -> List (Search (Term vars))
+checkLocals : {vars : _} ->
+              (env : Env Term vars) -> 
+              (usable : List (Term vars)) -> 
+              (tm : Term vars) ->
+              Core (List (Search (Term vars)))
+checkLocals env [] tm = pure []
+checkLocals env ((Local idx p) :: xs) tm = ?ewqe_1 
+checkLocals env _ tm = ?ewqe_7
 
-tryRec : {vars : _} -> Env Term vars -> Search (Term vars) -> List (Search (Term vars))
+searchFunctions : {vars : _} ->
+                  (env : Env Term vars) ->
+                  (tm : Term vars) ->
+                  Core (List (Search (Term vars)))
+searchFunctions env tm = ?searchFunctions_rhs
 
-getBest : {vars : _} -> List (Search (Term vars)) -> Search (Term vars)
+tryConstructors : {vars : _} ->
+                  (env : Env Term vars) ->
+                  (tm : Term vars) ->
+                  (base : Term vars) ->
+                  Core (List (Search (Term vars)))
+tryConstructors env tm base = ?tryConstructors_rhs
 
-enumerateEnv : {vars : _} -> 
-             {auto c : Ref Ctxt Defs} ->
-             Env Term vars -> 
-             Search (Term vars) ->
-             List (Search (Term vars))
-enumerateEnv env tm
-  = getFounds $
-    (searchLocals env tm)    ++
-    (attemptDatacons env tm) ++
-    (searchFunctions env tm) ++
-    (tryRec env tm)
-
-synthesiseTerm : {vars : _ } -> {auto c : Ref Ctxt Defs} ->
-                 Env Term vars -> Term vars -> Search (Term vars)
-
+synthesiseTerm : {vars : _ } ->
+                 {auto c : Ref Ctxt Defs} ->
+                 Env Term vars ->
+                 Term vars -> 
+                 Core (List (Search (Term vars)))
+synthesiseTerm env (Bind n (Pi nm pinfo tm) scope) 
+  = do let env' : Env Term (n :: _) = (Lam nm pinfo tm) :: env
+       results <- synthesiseTerm env' scope
+       pure $ map (\ res =>
+                      map (\ tm' =>
+                             (Bind n (Lam nm pinfo tm) tm'))
+                             res) results
+synthesiseTerm env tm
+  = do let (ret , args) = getFnArgs tm
+       -- when we get usable, we check for lambdas and patterns 
+       -- returning locals
+       locals <- checkLocals env (getUsableEnv [] env) tm
+       datas <- tryConstructors env tm ret
+       recurse <- searchFunctions env tm
+       pure $ locals ++ datas ++ recurse
 
 run : {auto c : Ref Ctxt Defs} ->
       Name -> Core String
-run n = do
- defs <- get Ctxt 
- Just d <- lookupDef n defs 
-  | _ => pure "Invalid name"
- let f = definition d
- ?fsd
-
+run n = do defs <- get Ctxt
+           Just def <- lookupDef n defs 
+            | _ => pure "Invalid Name" 
+           let (MetaVar vars env retTy) = definition def
+            | _ => pure "Invalid Name"
+           results <- synthesiseTerm {vars = vars} env retTy
+           ?fsfs      

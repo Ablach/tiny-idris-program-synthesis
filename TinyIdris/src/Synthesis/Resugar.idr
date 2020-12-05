@@ -5,8 +5,11 @@ import Data.Strings
 import TTImp.TTImp
 
 import Core.TT
+import Synthesis.Monad
 
-
+export
+resugar : Search RawImp -> Search String
+{-
 mutual
 resugarPat : Name ->
              (pat : RawImp) ->
@@ -48,3 +51,4 @@ resugar (IApp x y) = "( " ++ (resugar x) ++ " " ++ resugar y ++ " )"
 resugar (IHole x) = "?" ++ show x
 resugar Implicit = "_"
 resugar IType = " : "
+-}

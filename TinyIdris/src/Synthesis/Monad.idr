@@ -6,45 +6,28 @@ import Core.Env
 import Core.UnifyState
 import Synthesis.SynthErr
 
-union : List Constraint -> List Constraint -> Maybe (List Constraint)
-
 public export
-data Search : Type -> Type where 
-  -- a depth, a list of constraints, what to do next
-  Searching : a -> (n : Nat) -> (cs : List Constraint) -> Search a
-  -- the thing we've found
-  Found : (tm : Term vars) -> Search a
-  Stopped : Search a
+data Search : Type -> Type where
+  Stop : Search a
+  Go   : a -> Search a -> Search a
+
 
 mutual 
-  public export 
+  public export
   Functor Search where
-    map f (Searching x n cs) = Searching  (f x) n cs
-    map f (Found tm) = Found tm
-    map f Stopped = Stopped
+    map f Stop = Stop
+    map f (Go x y) = Go (f x) (map f y)
 
-  public export
+  public export 
   Applicative Search where
-    pure a = Searching a 10 [] 
-    (Searching f n' cs') <*> (Searching x n cs) 
-      = Searching (f x) n cs 
-    (Searching f n cs) <*> (Found tm) = Found tm
-    _ <*> _ = Stopped
+    pure  a = Go a Stop 
+    (Go f y) <*> a = map f a
+    _ <*> _ = Stop
 
-  public export
+  public export 
   Monad Search where
-    (Searching x n cs) >>= p 
-      = case p x of 
-         (Searching x' n' cs') => 
-            case union cs cs' of
-                 Nothing => Stopped 
-                 (Just cs'') => Searching x' n' cs''
-         b => b
-    (Found tm) >>= k = Found tm
-    Stopped >>= k = Stopped
-    
-public export 
-getFounds : List (Search a) -> List (Search a)
-getFounds [] = []
-getFounds ((Found tm) :: xs) = Found tm :: getFounds xs
-getFounds (_ :: xs) = getFounds xs
+    Stop >>= k = Stop
+    (Go x y) >>= k = case k x of
+                       Stop => y >>= k
+                       (Go z w) => Go z w
+

@@ -23,6 +23,13 @@ import Synthesis.Resugar
 import System
 import Data.Strings
 
+showE : {vars : _} -> Env Term vars -> String
+showE [] = "[]"
+showE ((Lam x z w) :: y) = "lam " ++ show w ++ " :: " ++ showE y
+showE ((Pi x z w) :: y) = "pi " ++ show w ++ " :: " ++ showE y
+showE ((PVar x z) :: y) = "pvar " ++ show z ++ " :: " ++ showE y
+showE ((PVTy x) :: y) = "pvty " ++ show x ++ " :: " ++ showE y
+
 isAuto : String -> Maybe (String)
 isAuto s = case (isPrefixOf "auto" s) of 
                 True => Just (strSubstr 5 (strLength s) s)
@@ -40,9 +47,14 @@ runAuto s =
          | Left err => do coreLift $ printLn err
                           repl 
      case ttexp of 
-        (IVar x) => case !(synthesize_single x) of
-                         (Left err) => coreLift $ putStrLn $ show err
-                         (Right tm) => coreLift $ putStrLn tm
+        (IVar x) => do defs <- get Ctxt
+                       Just def <- lookupDef x defs
+                        | _ => (do coreLift $ putStrLn "Not in Ctxt" ; repl)
+                       let (MetaVar vs env retTy) = definition def
+                        | _ => ?dsaad
+                       coreLift $ putStrLn $ "retTy = " ++ show retTy
+                       coreLift $ putStrLn $ "Env = " ++ showE env
+                       repl
         _ => coreLift $ putStrLn $ "Not a hole or var"
      repl
 
@@ -60,7 +72,7 @@ repl = do coreLift $ putStr "> "
           coreLift $ putStrLn $ "Type: " ++ show !(normalise defs [] !(getTerm ty))
           nf <- normalise defs [] tm
           coreLift $ putStrLn $ "Evaluated: " ++ show nf
-          coreLift $ putStrLn $ "resugared: " ++ resugar (unelab [] tm)
+          -- coreLift $ putStrLn $ "resugared: " ++ resugar (unelab [] tm)
           repl
 
 runMain : List ImpDecl -> Core ()

@@ -104,3 +104,7 @@ updateDef n upd
          Just gdef <- lookupDef n defs
               | Nothing => throw (UndefinedName n)
          addDef n (upd gdef)
+
+export 
+mapDefs : {auto c : Ref Ctxt Defs} -> (GlobalDef -> a) -> Core (List a)
+mapDefs f = pure $ values $ map f !(get Ctxt) 

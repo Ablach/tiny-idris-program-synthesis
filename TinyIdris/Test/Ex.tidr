@@ -24,7 +24,7 @@ two = S one
 
 Mul : Nat -> Nat -> Nat
 
-
+vvv : Vect two Nat
 
 -- TESTS
 

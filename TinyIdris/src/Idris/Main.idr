@@ -50,6 +50,7 @@ runAuto s =
         (IVar x) => do defs <- get Ctxt
                        Just def <- lookupDef x defs
                         | _ => (do coreLift $ putStrLn "Not in Ctxt" ; repl)
+                       coreLift $ putStrLn $ "type from ctxt " ++ (show $ type def)
                        let (MetaVar vs env retTy) = definition def
                         | _ => ?dsaad
                        coreLift $ putStrLn $ "retTy = " ++ show retTy

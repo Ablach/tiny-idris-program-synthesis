@@ -27,13 +27,20 @@ printResult : Search String -> String
 
 data UFail : Type where
 
+synthesiseTerm : {vars : _ } ->
+                 {auto c : Ref Ctxt Defs} ->
+                 Env Term vars ->
+                 SortedMap Int Constraint ->
+                 Term vars -> 
+                 Core (List (Search (Term vars)))
+
 tryUnify : {vars : _} ->
            {auto c : Ref Ctxt Defs} -> 
            Env Term vars ->
            Term vars -> Term vars -> 
            Core (Search (SortedMap Int Constraint))
 tryUnify env a b
-  = do u <- newRef UST initUState
+  = do newRef UST initUState
        newRef UFail False 
        res <- catch (unify env a b) 
                     (\ _ => do put UFail True 
@@ -41,6 +48,38 @@ tryUnify env a b
        if !(get UFail) 
           then pure $ Go (constraints !(get UST)) 
           else pure Stop
+
+
+fillMetas : {vars :_} -> 
+            {auto c : Ref Ctxt Defs} ->
+            {auto u : Ref UST UState} ->
+            Env Term vars -> 
+            Term vars ->
+            List (Term vars) ->
+            Core (Term vars , List (Term vars))
+fillMetas env (Bind x (Pi n pinfo y) scope) ts 
+ = do nm <- newMeta env x y Hole
+      (sc , ms) <- fillMetas (Lam n pinfo nm :: env) scope []
+      ?dsfsd
+fillMetas env tm ts = pure (tm , ts)
+
+makeApps : {vars : _} -> List (List (Search (Term vars))) -> Term [] -> Core (List (Search (Term vars)))
+makeApps xs x = ?makeApps_rhs
+
+synthClosure : {vars : _} -> 
+               {auto c : Ref Ctxt Defs} ->
+               (env : Env Term vars) ->
+               (target : Term vars) ->
+               (tm : Term []) ->
+               Core (List (Search (Term vars)))
+synthClosure env target tm = 
+  do newRef UST initUState
+     (tm', tms) <- ?ofillMetas --env ?ddtm []
+     case !(tryUnify env target tm') of
+       Stop => pure []
+       (Go cs) =>
+         do ts <- traverse (synthesiseTerm env cs) tms
+            makeApps ts tm
 
 checkLocals : {vars : _} ->
               {auto c : Ref Ctxt Defs} ->
@@ -56,10 +95,12 @@ checkLocals env (_ :: xs) tm = checkLocals env xs tm
 checkLocals _ [] _ = pure []
 
 searchFunctions : {vars : _} ->
+                  {auto c : Ref Ctxt Defs} ->
                   (env : Env Term vars) ->
                   (tm : Term vars) ->
                   Core (List (Search (Term vars)))
-searchFunctions env tm = ?searchFunctions_rhs
+searchFunctions env tm 
+  = do pure $ concat !(traverse id !(mapDefs (\ d => synthClosure env tm (type d)))) 
 
 tryConstructor : {vars : _} ->
                  {auto c : Ref Ctxt Defs} ->
@@ -71,36 +112,32 @@ tryConstructor env tm n
   = do Just def <- lookupDef n !(get Ctxt)
         | _ => pure []
        case definition def of
-            (DCon tag arity ty) => 
-               ?fsdd_3
-               {-
-                  for each arg genreate metas, then attempt unification, 
-                  if it fails, fail, if it returns with constraints, 
-                  attempt to synthesise the terms using the constraints.
-              -}
+            (DCon tag arity dtc) => synthClosure env tm dtc
             (TCon tag arity datacons) => 
               pure $ concat !(traverse (tryConstructor env tm) datacons)         
             _ => pure []
-      
+
  {-    
 Search is just maybe, could possibly take in a core a and wrap it, would
 need wrappers for definition and lookup, might not be worth it though,
 could lead to issues with core. 
--}
+
 
 synthesiseTerm : {vars : _ } ->
                  {auto c : Ref Ctxt Defs} ->
                  Env Term vars ->
+                 List Constraint ->
                  Term vars -> 
                  Core (List (Search (Term vars)))
-synthesiseTerm env (Bind n (Pi nm pinfo tm) scope) 
+-}
+synthesiseTerm env cs (Bind n (Pi nm pinfo tm) scope) 
   = do let env' : Env Term (n :: _) = (Lam nm pinfo tm) :: env
-       results <- synthesiseTerm env' scope
+       results <- synthesiseTerm env' cs scope
        pure $ map (\ res =>
                       map (\ tm' =>
                              (Bind n (Lam nm pinfo tm) tm'))
                              res) results
-synthesiseTerm env tm
+synthesiseTerm env cs tm
   = do let (ret , args) = getFnArgs tm
        -- when we get usable, we check for lambdas and patterns 
        -- returning locals
@@ -118,5 +155,5 @@ run n = do Just def <- lookupDef n !(get Ctxt)
             | _ => pure "Invalid Name" 
            let (MetaVar vars env retTy) = definition def
             | _ => pure "Invalid Name"
-           results <- synthesiseTerm {vars = vars} env retTy
+           results <- synthesiseTerm {vars = vars} env empty retTy
            ?fsfs      

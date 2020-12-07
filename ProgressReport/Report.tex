@@ -1,4 +1,4 @@
-% Created 2020-11-23 Mon 01:00
+% Created 2020-11-23 Mon 01:02
 % Intended LaTeX compiler: pdflatex
 \documentclass[a4paper]{article}
 \usepackage[utf8]{inputenc}
@@ -36,7 +36,7 @@
 \bibliographystyle{plain}
 
 \section{Introduction}
-\label{sec:org6b9abea}
+\label{sec:org96a177e}
 
 Programming often involves implementing low level details that can be tedious.
 The goal of program synthesis is to automate as much of this as possible, speeding up the process
@@ -94,9 +94,9 @@ given the name of a hole, attempts synthesis, returning the string representatio
 \clearpage
 
 \section{Project Specification}
-\label{sec:org0f35aa4}
+\label{sec:org56e7fcd}
 \subsection{The System}
-\label{sec:orgd63243d}
+\label{sec:org3506169}
 
 TinyIdris files consist of declarations that come in three forms, data declarations, type declarations and definitions.
 After parsing the file, these are processed as Global definitions which are stored within the 
@@ -172,7 +172,7 @@ environment then we must construct the local variable that uses it, for which we
 this is implemented in the Rescope module which can be found in Appendix A. 
 
 \subsection{The Synthesizer}
-\label{sec:org00744b4}
+\label{sec:orgd0606f3}
 At its heart, program synthesis is a search problem. The search space consists of every possible way to
 construct a term from the given context and environment. Following a naive approach will quickly become infeasible, 
 thus we must find ways to restrict the search space to one that can be enumerated within a reasonable amount of time. Since there are 
@@ -186,7 +186,7 @@ propagated back up, and combined to construct the main goal term. If all possibl
 the terms on the left hand sides can be matched on to provide the type checker with more information. 
 
 \subsubsection{Constraints}
-\label{sec:org233733e}
+\label{sec:org88fd160}
 Constraints exist in several forms. In the TinyIdris system, if the type provided is one or more  
 applications \texttt{App}, the type to be synthesised is the function type, with the added subtyping constraints that the final type unify with
 the application. Constraints are also generated during unification, these constraints result in the construction of a 
@@ -196,7 +196,7 @@ Sub-typing constraints are propagated down and help to reduce the search space. 
 generated we require that all possible outcomes must result in a valid term, and if more constraints are generated
 then they are valid, in order for a top level branching term to be synthesised.
 \subsubsection{Termination checking}
-\label{sec:org1f33d4d}
+\label{sec:orgcec88d9}
 When synthesising the definition for a function, the function will already be stored within the context, since it will 
 return the type we are looking for it would be enumerated as a possible definition, this creates obvious termination 
 problems. For this reason, when making a recursive call, there must be some check to ensure at least one of the 
@@ -208,7 +208,7 @@ system.
 The alternate form that termination checking takes is checking that co-inductive definitions, although potentially non 
 terminating, are required to be productive. For simplicity this is omitted here and left as a potential future development.
 \subsubsection{Heuristics}
-\label{sec:org83058a8}
+\label{sec:org54b6634}
 It is possible for the algorithm to construct terms which type check, however are still incorrect, especially 
 when there is a lack of type information. Synthesis algorithms can be optimised with heuristics to help prevent this.
 One of the issues can be seen in the map example with lists, the synthesis algorithm does not have enough information to 
@@ -233,7 +233,7 @@ number of enumerations, however this may lead to worse results if other heuristi
 term rather than simply taking the first found. 
 
 \section{Related work}
-\label{sec:org2631bdb}
+\label{sec:org210f32d}
 There is a strong relationship between type guided program synthesis and the creation of automatic proof search algorithms.
 It is worth noting that there have also been attempts at synthesising programs from the machine learning community, however these
 are outside the scope of the project and as such are not discussed here. Some of the research presented here has since been 
@@ -242,7 +242,7 @@ times it may be used, this has been shown \cite{10.1145/3314221.3314602} to impr
 a type driven approach. TinyIdris does not support quantitative types, and hence these are omitted.
 
 \subsection{Automated Theorem Proving in Agda}
-\label{sec:orga26886a}
+\label{sec:org9fafe7d}
 Agda is a dependently typed programming language and interactive proof assistant, and is the closest relative to Idris.
 Indeed the development of Agda heavily influenced that of Idris \cite{Splv'202020Aug} . The language supports many
 of the same features as Idris, such as hole driven development with interactive typing information. 
@@ -294,7 +294,7 @@ However this may also work in Agsy's favour, as more general approaches may not 
 require specific knowledge of the problem domain.
 
 \subsection{Applications of Applicative Proof Search}
-\label{sec:org5e12de7}
+\label{sec:org19e1627}
 This work constructs a library for typed proof search procedures. The approach taken is very general, which allows the 
 framework to be easily specialised to various concrete use cases. The two examples provided use the library to implement a 
 property based testing library and a basic model checker. Here, we cover the main framework, as it shares some similarities 
@@ -317,7 +317,7 @@ The paper goes on to develop two validation libraries. The flexibility of the fr
 suggests that following a similar approach will provide a solid foundation for a proof search algorithm.
 
 \subsection{Synthesis Modulo Recursive Functions}
-\label{sec:org7111d40}
+\label{sec:org5100bcd}
 One of the earlier systems for synthesising programs within a functional programming environment was included in the Leon system.
 The system is implemented in, and able to synthesise, a subset of Scala. The tool is available as both a command line
 tool and a web based application. Although the Synthesiser has typing information available to it, it is not used to 
@@ -394,7 +394,7 @@ has surpassed it by synthesising significantly more problems, and in much less t
 such as condition abduction, which have heavily influenced techniques used in more modern systems.
 
 \subsection{Type and Example Directed Program Synthesis}
-\label{sec:orgcc61695}
+\label{sec:org7a49ab9}
 The Myth system treats program synthesis as a proof search, that uses type information and concrete input/output examples
 to reduce the size of the search space. The system generates OCaml syntax, however it requires type signatures, differentiating it from the language.
 The work introduces the concept of \emph{refinement trees} that represent constraints on the shape of the generated code. 
@@ -435,7 +435,7 @@ is still relatively low, however some definitions took up to 22 seconds. Example
 problems requiring up to 24 input/output examples to be synthesised, and in some cases coming up with examples which allowed a definition to be synthesised. 
 
 \subsection{Program Synthesis from Polymorphic Refinement Types}
-\label{sec:org87ad2e6}
+\label{sec:org9b1b8ff}
 Synquid is a type guided program synthesis system developed that uses the recent idea of liquid types to provide the 
 type checker with more information to effectively reduce the search space.
 Liquid types allow programs to be specified in a more compact manner than using examples. Synquid has
@@ -491,7 +491,7 @@ considerably faster by Synquid. The results show that the extension of the type 
 specifications to be stated more precisely, but to significantly improve performance. 
 
 \subsection{Dependent Type Driven Program Synthesis}
-\label{sec:orge4e9320}
+\label{sec:org2b9afa7}
 The Idris programming language has proof search functionality built in, with the recent release of Idris2 this has 
 been improved. The internal representation of the language is similar to that of the TinyIdris system, 
 however the full Idris 2 implementation has much more information available, much of this is due to the more sophisticated 
@@ -511,11 +511,11 @@ between this system and the previous three presented is the lack of a full enume
 increase the number of terms synthesisable, this system is also implemented as part of a full programming language as 
 opposed to a standalone tool, this may introduce performance issues to the synthesis that may not hinder the previous 
 tools. 
-\clearpage
+
 \section{Plan}
-\label{sec:org9581116}
+\label{sec:org8b6763d}
 \subsection{Current Progress}
-\label{sec:org23f9a23}
+\label{sec:org8963d86}
 Some initial plumbing has been created which can be found in the appendices. An initial prototype was under development 
 and is discussed here, future work is outlined in the next section. 
 
@@ -572,7 +572,7 @@ to synthesise types via their data constructors, as this also resulted in highly
 
 \clearpage
 \subsection{Future Development}
-\label{sec:org7c39e30}
+\label{sec:orgcd969f6}
 
 The most immediate development will be the creation of a \texttt{Search} monad to handle the propagation of constraints, allowing 
 increased code reuse. The re-implementation of the algorithm should increase the capabilities of the synthesiser to support searching
@@ -647,7 +647,7 @@ reduce the search space.
 After each change the test suite should be re-run with results recorded and evaluated.
 
 \section{Testing and Evaluation}
-\label{sec:org3463dff}
+\label{sec:org4043759}
 
 A test suite will be created consisting of examples that should each test a specific area of the synthesis algorithm. 
 This should be in the form of several test scripts containing holes, along with a solutions files containing the 
@@ -687,7 +687,7 @@ The questions being asked when evaluating the system will include:
 \bibliography{ProgressReport}
 \clearpage
 \section{Appendix A}
-\label{sec:org0a4c064}
+\label{sec:org8a4d2d3}
 
 \begin{center}
 \begin{minted}[]{idris}
@@ -738,7 +738,7 @@ getUsableEnv _ [] = []
 \clearpage
 
 \section{Appendix B}
-\label{sec:orgfeb6878}
+\label{sec:org20f49c4}
 
 \begin{center}
 \begin{minted}[]{idris}
@@ -795,7 +795,7 @@ resugar IType = " : "
 \end{center}
 \clearpage
 \section{Appendix C}
-\label{sec:orgcb130c1}
+\label{sec:org3add450}
 
 \begin{center}
 \begin{minted}[]{idris}

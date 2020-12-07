@@ -470,7 +470,7 @@ between this system and the previous three presented is the lack of a full enume
 increase the number of terms synthesisable, this system is also implemented as part of a full programming language as 
 opposed to a standalone tool, this may introduce performance issues to the synthesis that may not hinder the previous 
 tools. 
-#+latex: \clearpage
+
 * Plan
 ** Current Progress
 Some initial plumbing has been created which can be found in the appendices. An initial prototype was under development 

@@ -27,6 +27,7 @@ printResult : Search String -> String
 
 data UFail : Type where
 
+
 synthesiseTerm : {vars : _ } ->
                  {auto c : Ref Ctxt Defs} ->
                  Env Term vars ->
@@ -52,16 +53,10 @@ tryUnify env a b
 
 fillMetas : {vars :_} -> 
             {auto c : Ref Ctxt Defs} ->
-            {auto u : Ref UST UState} ->
-            Env Term vars -> 
+            {auto u : Ref UST UState} -> 
             Term vars ->
-            List (Term vars) ->
-            Core (Term vars , List (Term vars))
-fillMetas env (Bind x (Pi n pinfo y) scope) ts 
- = do nm <- newMeta env x y Hole
-      (sc , ms) <- fillMetas (Lam n pinfo nm :: env) scope []
-      ?dsfsd
-fillMetas env tm ts = pure (tm , ts)
+            Core (Term (ns ++ vars) , (ns' : List Name), ns ++ vars = ns' ++ vars)
+fillMetas tm = ?fillMetas_rhs
 
 makeApps : {vars : _} -> List (List (Search (Term vars))) -> Term [] -> Core (List (Search (Term vars)))
 makeApps xs x = ?makeApps_rhs
@@ -74,12 +69,26 @@ synthClosure : {vars : _} ->
                Core (List (Search (Term vars)))
 synthClosure env target tm = 
   do newRef UST initUState
-     (tm', tms) <- ?ofillMetas --env ?ddtm []
-     case !(tryUnify env target tm') of
+     {-
+     tm is a binder that we are trying to find out the 
+     retyurn of, and check if it unifies with the type 
+     we want, we must extend the env of the binder to match
+     and extend the scoped names of both the type and target 
+     terms, if they unify, we can return the result of synthesising 
+     the args in the initial env, and return the application 
+     of the initial binder, extended with our env, to the terms
+     case !(tryUnify [] tgt tm) of
        Stop => pure []
        (Go cs) =>
-         do ts <- traverse (synthesiseTerm env cs) tms
+         do ts <- traverse (synthesiseTerm env cs) ?tms
             makeApps ts tm
+     -}
+     --appendNilRightNeutral  will be handy
+     let tm' = weakenNs vars tm
+     (tm'' , ns, prf) <- fillMetas tm'
+     let target' = weakenNs ns target
+     res <- tryUnify ?fds ?fdsa ?dsf
+     ?synthClosure_rhs
 
 checkLocals : {vars : _} ->
               {auto c : Ref Ctxt Defs} ->
@@ -156,4 +165,6 @@ run n = do Just def <- lookupDef n !(get Ctxt)
            let (MetaVar vars env retTy) = definition def
             | _ => pure "Invalid Name"
            results <- synthesiseTerm {vars = vars} env empty retTy
-           ?fsfs      
+           ?run_rhs
+
+

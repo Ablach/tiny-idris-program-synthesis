@@ -9,8 +9,8 @@ import Synthesis.SynthErr
 public export
 data Search : Type -> Type where
   Stop : Search a
-  Go   : a -> Search a
-
+  Go   : a -> Search a -- : Core a -> Search a
+  -- Choose : Core (F a) -> Search a
 
 mutual 
   public export

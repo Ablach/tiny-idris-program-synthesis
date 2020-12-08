@@ -55,10 +55,10 @@ fillMetas : {vars :_} ->
             {auto c : Ref Ctxt Defs} ->
             {auto u : Ref UST UState} -> 
             Term vars ->
-            Core (Term (ns ++ vars) , (ns' : List Name), ns ++ vars = ns' ++ vars)
+            Core ((ns ** (Term (ns ++ vars) , Env Term (ns ++ vars))) , List (Term []))
 fillMetas tm = ?fillMetas_rhs
 
-makeApps : {vars : _} -> List (List (Search (Term vars))) -> Term [] -> Core (List (Search (Term vars)))
+makeApps : {vars : _} -> List (List (Search (Term vars))) -> Term vars -> Core (List (Search (Term vars)))
 makeApps xs x = ?makeApps_rhs
 
 synthClosure : {vars : _} -> 
@@ -77,18 +77,17 @@ synthClosure env target tm =
      terms, if they unify, we can return the result of synthesising 
      the args in the initial env, and return the application 
      of the initial binder, extended with our env, to the terms
-     case !(tryUnify [] tgt tm) of
-       Stop => pure []
-       (Go cs) =>
-         do ts <- traverse (synthesiseTerm env cs) ?tms
-            makeApps ts tm
      -}
      --appendNilRightNeutral  will be handy
      let tm' = weakenNs vars tm
-     (tm'' , ns, prf) <- fillMetas tm'
+     ((ns ** (tm'' , env'')) , coms) <- fillMetas tm'
+     let combs = map (weakenNs vars) coms
      let target' = weakenNs ns target
-     res <- tryUnify ?fds ?fdsa ?dsf
-     ?synthClosure_rhs
+     Go cs <- tryUnify env'' tm'' (rewrite appendNilRightNeutral vars in target')
+       |_ => pure []
+     makeApps !(traverse (synthesiseTerm env cs)
+                   (rewrite sym (appendNilRightNeutral vars) in combs)) 
+                   (rewrite sym (appendNilRightNeutral vars) in tm') 
 
 checkLocals : {vars : _} ->
               {auto c : Ref Ctxt Defs} ->

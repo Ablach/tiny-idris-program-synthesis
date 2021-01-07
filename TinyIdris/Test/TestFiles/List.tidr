@@ -1,0 +1,38 @@
+data List : Type -> Type where
+  Nil : (a : Type) -> List a
+  Cons : (a : Type) -> a -> List a -> List a
+
+data Nat : Type where
+  Z : Nat
+  S : Nat -> Nat
+
+append : (a : _) -> List a -> List a -> List a
+pat a : Type, ys : List a =>
+    append a (Nil a) ys = ?l1
+pat a : Type, x : a, xs : List a, ys : List a =>
+    append a (Cons a x xs) ys
+        = ?l2
+
+data Test : Type where
+     A : Test
+     B : Test
+
+map : (a : _) -> (b : _) -> (a -> b) -> List a -> List b
+pat a : Type, b : Type, f : (a -> b) =>
+   map a b f (Nil a) = ?l3
+pat a : Type, b : Type, f : (a -> b), x : a, xs : List a =>
+   map a b f (Cons a x xs) = ?l4
+
+replicate : (a : _) -> (x : a) -> Nat -> List a
+pat a : Type, x : a => 
+   replicate a x Z = ?l5
+pat a : Type, x : a, n : Nat => 
+   replicate a x (S n) = ?l6
+
+drop : (a : _) -> (n : Nat) -> List a -> List a
+pat a : Type, ys : List a =>
+  drop a Z ys = ?l7
+pat a : Type, n : Nat =>
+  drop a (S n) (Nil a) = ?l8
+pat a : Type, n : Nat, x : a, xs : List a =>
+  drop a (S n) (Cons a x xs) = ?l9

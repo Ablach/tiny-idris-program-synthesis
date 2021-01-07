@@ -37,7 +37,7 @@ processData (MkImpData n tycon datacons)
          defs <- get Ctxt
          traverse_ (\ (i, (cn, ty)) =>
                        do carity <- getArity defs [] ty
-                          addDef cn (newDef ty (DCon (cast i) carity ty))
+                          addDef cn (newDef ty (DCon (cast i) carity))
                           updateDef n (\d => case definition d of   
                                         (TCon tag k xs) => newDef (type d) (TCon tag k (cn :: xs))
                                         _ => d))

@@ -1,0 +1,11 @@
+data Nat : Type where
+   Z : Nat
+   S : Nat -> Nat
+
+add : Nat -> Nat -> Nat
+pat n : Nat =>
+   add Z n = ?e1
+pat n : Nat, m : Nat => 
+   add (S n) m = ?e2
+
+add : Nat -> Nat -> (Nat -> Nat) -> Nat

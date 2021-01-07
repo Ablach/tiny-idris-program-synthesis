@@ -4,7 +4,7 @@ import Core.Core
 import Core.TT
 import Core.Env
 import Core.UnifyState
-import Synthesis.SynthErr
+
 
 public export
 data Search : Type -> Type where

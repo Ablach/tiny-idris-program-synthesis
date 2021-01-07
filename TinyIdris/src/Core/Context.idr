@@ -12,7 +12,7 @@ data Def : Type where
     None : Def -- Not yet defined
     PMDef : (args : List Name) -> (treeCT : CaseTree args) ->
             Def -- Ordinary function definition
-    DCon : (tag : Int) -> (arity : Nat) -> (ty : Term []) -> Def -- data constructor
+    DCon : (tag : Int) -> (arity : Nat) -> Def -- data constructor
     TCon : (tag : Int) -> (arity : Nat) -> (datacons : List Name) -> Def
     Hole : Def
     MetaVar : (vars : List Name) ->  Env Term vars -> (retTy : Term vars) -> Def
@@ -104,7 +104,14 @@ updateDef n upd
          Just gdef <- lookupDef n defs
               | Nothing => throw (UndefinedName n)
          addDef n (upd gdef)
+export 
+mapDefs' : {auto c : Ref Ctxt Defs} -> ((Name , GlobalDef) -> a) -> Core (List a)
+mapDefs' f = pure $ map f (toList !(get Ctxt))
 
 export 
 mapDefs : {auto c : Ref Ctxt Defs} -> (GlobalDef -> a) -> Core (List a)
 mapDefs f = pure $ values $ map f !(get Ctxt) 
+
+export 
+traverseDefs : {auto c : Ref Ctxt Defs} -> ((Name, GlobalDef) -> Core ()) -> Core ()
+traverseDefs f = do traverse f (toList !(get Ctxt)) ; pure ()

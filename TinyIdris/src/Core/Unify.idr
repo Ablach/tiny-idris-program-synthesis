@@ -328,8 +328,49 @@ mutual
   Unify NF where
     -- If we have two pi binders, check the arguments and scope
     unify env (NBind x (Pi n y z) sc) (NBind x' (Pi n' w v) sc') 
-        = ?unifyBinders
-        
+        = do defs <- get Ctxt
+             empty <- clearDefs defs
+             z' <- quote empty env z
+             cs <- unify env z v
+             zn <- genVarName "x"
+             let env' : Env Term (x :: _)
+                      = (Pi n' Explicit z') :: env
+             case constraints cs of
+                  [] => 
+                    do sca <- sc defs (toClosure env (Ref Bound zn))
+                       scb <- sc' defs (toClosure env (Ref Bound zn))
+                       tma <- quote empty env sca
+                       tmb <- quote empty env scb
+                       unify env' (refsToLocals (Add x zn None) tma) (refsToLocals ( Add x zn None) tmb) 
+                  (c :: xs) => 
+                    do tt <- quote empty env z
+                       uu <- quote empty env v
+                       dd <- newConstant env (Bind x (Lam n' Explicit tt) (Local _ First)) 
+                                             (Bind x (Pi n' Explicit tt) (weaken uu)) (c :: xs)
+                       sca <- sc defs (toClosure env (Ref Bound zn))
+                       scb <- sc' defs (toClosure env (Ref Bound zn))
+                       tma <- quote empty env sca
+                       tmb <- quote empty env scb 
+                       cs' <- unify env' (refsToLocals (Add x zn None) tma) (refsToLocals ( Add x zn None) tmb) 
+                       pure (union cs cs')
+    unify env (NBind x (Lam x' ix tx) sc) (NBind y (Lam y' iy ty) sc') 
+       = do defs <- get Ctxt 
+            emp <- clearDefs defs
+            tx' <- quote emp env tx
+            ct <- unify env tx ty
+            xn <- genVarName "x"
+            let env' : Env Term (x :: _)
+                     = Lam x' Explicit tx' :: env
+            txtm <- quote emp env tx
+            txty <- quote emp env ty
+            tscx <- sc defs (toClosure env (Ref Bound xn))
+            tscy <- sc' defs (toClosure env (Ref Bound xn))
+            tmx <- quote emp env tscx
+            tmy <- quote emp env tscx 
+            cs' <- unify env' (refsToLocals (Add x xn None) tmx)
+                              (refsToLocals (Add x xn None) tmy)
+            pure $ union ct cs'
+    unify env a@(NBind x y z) b@ (NBind u v w) = convertError env a b 
     -- Matching constructors, reduces the problem to unifying the arguments
     unify env nx@(NDCon n t a args) ny@(NDCon n' t' a' args')
         = if t == t'
@@ -391,6 +432,7 @@ retry c
 
 -- Retry the constraints for the given definition, return True if progress
 -- was made
+
 retryGuess : {auto c : Ref Ctxt Defs} ->
              {auto u : Ref UST UState} ->
              (hole : Name) ->
@@ -429,3 +471,13 @@ solveConstraints
          progress <- traverse retryGuess (SortedSet.toList (guesses ust))
          when (anyTrue progress) $
                solveConstraints
+
+export 
+retryInts : {auto c : Ref Ctxt Defs} ->
+            {auto u : Ref UST UState} -> 
+            List Int -> Core (List Int)
+retryInts [] = pure []
+retryInts (c :: cs) = do res <- retry c
+                         case constraints res of
+                              [] => retryInts cs
+                              (x :: xs) => pure $ x :: !(retryInts cs)

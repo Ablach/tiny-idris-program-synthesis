@@ -173,3 +173,13 @@ newConstant {vars} env tm ty constrs
     envArgs : List (Term vars)
     envArgs = let args = reverse (mkConstantAppArgs {done = []} env []) in
                   rewrite sym (appendNilRightNeutral vars) in args
+
+export
+genVarName : {auto c : Ref Ctxt Defs} ->
+             {auto u : Ref UST UState} ->
+             String -> Core Name
+genVarName str
+    = do ust <- get UST
+         put UST (record { nextName $= (+1) } ust)
+         pure (MN str (nextName ust))
+

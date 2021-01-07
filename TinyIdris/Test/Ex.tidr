@@ -10,6 +10,12 @@ data Vect : Nat -> Type -> Type where
     VNil : (a : Type) -> Vect Z a
     VCons : (a : Type) -> (n : Nat) -> a -> Vect n a -> Vect (S n) a
 
+ety : Vect Z Nat
+ety = VNil Nat
+
+sing : Vect (S Z) Nat
+sing = VCons Nat Z (S (S Z)) (VNil Nat)
+
 add : Nat -> Nat -> Nat
 pat n : Nat => 
     add Z n = n

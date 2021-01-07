@@ -66,7 +66,7 @@ checkTerm env (IVar n) exp
                 Just gdef <- lookupDef n defs
                      | Nothing => throw (UndefinedName n)
                 let nt = case definition gdef of
-                              DCon t a as => DataCon t a
+                              DCon t a => DataCon t a
                               TCon t a ds => TyCon t a
                               _ => Func
                 checkExp env (Ref nt n) (gnf env (embed (type gdef))) exp
@@ -122,7 +122,20 @@ checkTerm env (IApp f a) exp
                        -- to evaluate the scope with 'atm'
                        sc' <- sc defs (toClosure env atm)
                        checkExp env (App ftm atm) (glueBack defs env sc') exp
-              _ => throw (GenericMsg "Not a function type")
+              t => do case t of
+                        (NBind x y g) => log (show x)
+                        (NApp (NLocal idx p) xs) => log $ "loc" ++ (show idx)
+                        (NApp (NRef x y) xs) => 
+                           log $ "ref" ++ (show x) ++ " " ++ (show y)
+                        (NApp (NMeta x ys) xs) =>
+                           log $ "Meta" ++ (show x)
+                        (NDCon x tag arity xs) =>
+                           log $ "data " ++ (show x)
+                        (NTCon x tag arity xs) =>
+                           log $ "typeC " ++ (show x)
+                        NType => log "NTY"
+                        NErased => log "erased"
+                      throw (GenericMsg $ "Not a function type")
 checkTerm env Implicit Nothing
     = throw (GenericMsg "Unknown type for implicit")
 checkTerm env Implicit (Just exp)

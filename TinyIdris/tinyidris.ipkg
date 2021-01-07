@@ -61,10 +61,10 @@ modules = -- Core TT representations
 
 	  Synthesis.Synthesize,
 	  Synthesis.Unelab,
-	  Synthesis.Resugar,
-	  Synthesis.SynthErr,
+	  Synthesis.Resugar, 
 	  Synthesis.Rescope,
-	  Synthesis.Monad
+	  Synthesis.Monad,	
+	  Synthesis.Test
 
 options = "-p contrib"
 

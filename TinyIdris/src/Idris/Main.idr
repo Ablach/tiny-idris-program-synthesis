@@ -16,30 +16,34 @@ import TTImp.TTImp
 import Parser.Source
 
 import Synthesis.Synthesize
-import Synthesis.SynthErr
 import Synthesis.Unelab
 import Synthesis.Resugar
+import Synthesis.Monad
+import Synthesis.Test
 
 import System
+import System.File
 import Data.Strings
+import Data.List
+import Data.SortedMap
 
-showE : {vars : _} -> Env Term vars -> String
-showE [] = "[]"
-showE ((Lam x z w) :: y) = "lam " ++ show w ++ " :: " ++ showE y
-showE ((Pi x z w) :: y) = "pi " ++ show w ++ " :: " ++ showE y
-showE ((PVar x z) :: y) = "pvar " ++ show z ++ " :: " ++ showE y
-showE ((PVTy x) :: y) = "pvty " ++ show x ++ " :: " ++ showE y
 
 isAuto : String -> Maybe (String)
 isAuto s = case (isPrefixOf "auto" s) of 
                 True => Just (strSubstr 5 (strLength s) s)
                 False => Nothing
 
+isTest : String -> Bool
+isTest s = isPrefixOf "test" s 
+
 runAuto : {auto c : Ref Ctxt Defs} ->
           {auto u : Ref UST UState} -> 
+          {auto a : Ref Answers Sheet} ->
           String -> Core ()
+
 repl : {auto c : Ref Ctxt Defs} ->
        {auto u : Ref UST UState} ->
+       {auto a : Ref Answers Sheet} ->
        Core ()
 
 runAuto s = 
@@ -47,23 +51,20 @@ runAuto s =
          | Left err => do coreLift $ printLn err
                           repl 
      case ttexp of 
-        (IVar x) => do defs <- get Ctxt
-                       Just def <- lookupDef x defs
-                        | _ => (do coreLift $ putStrLn "Not in Ctxt" ; repl)
-                       coreLift $ putStrLn $ "type from ctxt " ++ (show $ type def)
-                       let (MetaVar vs env retTy) = definition def
-                        | _ => ?dsaad
-                       coreLift $ putStrLn $ "retTy = " ++ show retTy
-                       coreLift $ putStrLn $ "Env = " ++ showE env
-                       repl
+        (IVar x) => coreLift $ putStrLn $ !(run x) 
         _ => coreLift $ putStrLn $ "Not a hole or var"
      repl
-
+     
 repl = do coreLift $ putStr "> "
           inp <- coreLift getLine
           let Nothing = isAuto inp 
-            | Just t => do runAuto t
+            | Just t => do coreLift $ putStrLn "Running Auto Search: "
+                           runAuto t
                            repl
+          let False = isTest inp 
+            | True => do coreLift $ putStrLn "Running tests: "
+                         runTests
+                         repl
           let Right ttexp = runParser Nothing inp (expr "(input)" init)
               | Left err => do coreLift $ printLn err
                                repl
@@ -76,10 +77,11 @@ repl = do coreLift $ putStr "> "
           -- coreLift $ putStrLn $ "resugared: " ++ resugar (unelab [] tm)
           repl
 
-runMain : List ImpDecl -> Core ()
-runMain decls
+runMain : List ImpDecl -> Sheet -> Core ()
+runMain decls ans
     = do c <- newRef Ctxt !initDefs
          u <- newRef UST initUState
+         a <- newRef Answers ans
          traverse_ processDecl decls
          repl
 
@@ -87,7 +89,9 @@ main : IO ()
 main = do [_, fname] <- getArgs
               | _ => putStrLn "Usage: tinyidris <filename>"
           Right decls <- parseFile fname (do p <- prog fname; eoi; pure p)
-              | Left err => printLn err 
-          coreRun (runMain decls)
+              | Left err => printLn err  
+          Right answers <- parseAnswers (getAnswerFile fname)
+              | Left err => printLn (getAnswerFile fname)
+          coreRun (runMain decls answers)
                   (\err => printLn err)
                   pure

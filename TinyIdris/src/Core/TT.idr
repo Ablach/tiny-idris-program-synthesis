@@ -469,7 +469,7 @@ export
       showApp (Meta n args) []
           = "?" ++ show n ++ "_" ++ show args
       showApp (Bind x (Lam n p ty) sc) []
-          = "Bind" ++ show x ++ " lam " ++ " " ++ show ty ++
+          = "Bind " ++ show x ++ " lam " ++ " " ++ show ty ++
             " => " ++ show sc
       showApp (Bind x (Pi n Explicit ty) sc) []
           = "(bind " ++ show x ++ " (pi exp " ++ show ty ++

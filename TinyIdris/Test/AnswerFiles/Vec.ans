@@ -1,0 +1,8 @@
+v1 ! ys 
+v2 ! Cons a (add n m) x (append xs ys)
+v3 ! Nil b
+v4 ! Cons b n (f x) (map a b n f xs)
+v5 ! Nil a
+v6 ! Cons a n x (replicate a x n)
+v7 ! ys
+v8 ! drop a n m xs

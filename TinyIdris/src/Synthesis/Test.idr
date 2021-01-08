@@ -40,6 +40,7 @@ parseAnswers ans = do Right parsed <- readFile ans
                        (lines parsed)
 
 test : {auto c : Ref Ctxt Defs} ->
+       {auto u : Ref UST UState} ->
        {auto a : Ref Answers Sheet} ->
        (Name, GlobalDef) -> Core Nat
 test ((UN n),d)

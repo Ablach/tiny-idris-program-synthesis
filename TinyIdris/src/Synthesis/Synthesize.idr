@@ -111,6 +111,20 @@ makeApps (((Go y) :: ys) :: xs) x
 makeApps ((Stop :: ys) :: xs) x = makeApps (ys :: xs) x
 
 
+filterResults : {vars : _} ->
+                {auto c : Ref Ctxt Defs} ->
+                Env Term vars ->
+                Term vars ->
+                List (Search (Term vars)) ->
+                Core (List (Search (Term vars)))
+filterResults env tm [] = pure []
+filterResults env tm (Go x :: xs) 
+  = do Go [] <- tryUnify env tm x
+        | _ => filterResults env tm xs
+       pure ((Go x) :: !(filterResults env tm xs))
+filterResults env tm (_ :: xs) = filterResults env tm xs
+
+
 -- instead what we want it to move along the results from the fill metas
 -- and remove one from env and synthesise the rest
 synthBinderArgs : {vars : _} -> 
@@ -257,20 +271,6 @@ synthesiseTerm depth env cs tm
        pure $ locals ++ datas ++ fs
 
 
-filterResults : {vars : _} ->
-                {auto c : Ref Ctxt Defs} ->
-                Env Term vars ->
-                Term vars ->
-                List (Search (Term vars)) ->
-                Core (List (Search (Term vars)))
-filterResults env tm [] = pure []
-filterResults env tm (Go x :: xs) 
-  = do Go res <- tryUnify env tm x
-        | _ => filterResults env tm xs
-       pure ((Go x) :: !(filterResults env tm xs))
-filterResults env tm (_ :: xs) = filterResults env tm xs
-
-
 public export
 run : {auto c : Ref Ctxt Defs} ->
       Name -> Core String
@@ -280,11 +280,10 @@ run n = do Just def <- lookupDef n !(get Ctxt)
             | _ => pure "Invalid Name"
            --log $ "Synthesising for " ++ (show retTy)
            res <- (synthesiseTerm 3 {vars = vars} env empty retTy)
-           res' <- filterResults env retTy res
            --log "Results: "
            --printFinals env res'
            --log "Final: " 
-           let (Go result) = first res' 
+           let (Go result) = first res 
             | _ => pure "No result"
            pure $ resugarTop $ unelab env result 
 

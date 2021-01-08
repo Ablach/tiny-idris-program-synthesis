@@ -33,6 +33,11 @@ isAuto s = case (isPrefixOf "auto" s) of
                 True => Just (strSubstr 5 (strLength s) s)
                 False => Nothing
 
+isTestOne : String -> Maybe (String)
+isTestOne s = case (isPrefixOf "testOne" s) of 
+                True => Just (strSubstr 8 (strLength s) s)
+                False => Nothing
+
 isTest : String -> Bool
 isTest s = isPrefixOf "test" s 
 
@@ -40,6 +45,11 @@ runAuto : {auto c : Ref Ctxt Defs} ->
           {auto u : Ref UST UState} -> 
           {auto a : Ref Answers Sheet} ->
           String -> Core ()
+
+runTestOne : {auto c : Ref Ctxt Defs} ->
+             {auto u : Ref UST UState} -> 
+             {auto a : Ref Answers Sheet} ->
+             String -> Core ()
 
 repl : {auto c : Ref Ctxt Defs} ->
        {auto u : Ref UST UState} ->
@@ -55,11 +65,24 @@ runAuto s =
         _ => coreLift $ putStrLn $ "Not a hole or var"
      repl
      
+runTestOne s = 
+  do let Right ttexp = runParser Nothing s (expr "(input)" init)
+         | Left err => do coreLift $ printLn err
+                          repl 
+     case ttexp of 
+        (IVar x) => testOne x
+        _ => coreLift $ putStrLn $ "Not a hole or var"
+     repl
+
 repl = do coreLift $ putStr "> "
           inp <- coreLift getLine
           let Nothing = isAuto inp 
             | Just t => do coreLift $ putStrLn "Running Auto Search: "
                            runAuto t
+                           repl
+          let Nothing = isTestOne inp 
+            | Just t => do coreLift $ putStrLn "Running One Test: "
+                           runTestOne t
                            repl
           let False = isTest inp 
             | True => do coreLift $ putStrLn "Running tests: "

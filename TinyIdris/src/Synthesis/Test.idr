@@ -59,16 +59,25 @@ test ((UN n),d)
        if (res == ans) then pure 1 else pure 0
 test (_,d) = pure 0
 
+export 
+testOne : {auto c : Ref Ctxt Defs} ->
+          {auto u : Ref UST UState} -> 
+          {auto a : Ref Answers Sheet} ->
+          Name -> Core ()
+testOne n = 
+  do defs <- get Ctxt
+     Just def <- lookupDef n defs
+      | _ => log "Name not in context" 
+     test (n, def)
+     pure ()
+
 export
 runTests : {auto c : Ref Ctxt Defs} ->
            {auto u : Ref UST UState} -> 
            {auto a : Ref Answers Sheet} ->
            Core ()
 runTests = 
-  do newRef Answers !(get Answers)
-     let res = sum !(traverse id !(mapDefs' test)) 
-     log $ "Total successes " ++ (show res)
-     pure ()
-
+ log $ "Total successes " ++ 
+       (show $ sum !(traverse id !(mapDefs' test)))
 
 

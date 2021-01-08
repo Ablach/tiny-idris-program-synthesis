@@ -1,11 +1,16 @@
-l1 ! ys
-l2 ! Cons a x (append a xs ys)
-l3 ! Nil a
-l4 ! Cons b (f x) (map a b xs ys)
-l5 ! Nil a
-l6 ! Cons a x (replicate a x n)
-l7 ! ys
-l8 ! []
-l9 ! drop a n xs
+l01 ! ys
+l02 ! Cons a x (append a xs ys)
+l03 ! Nil a
+l04 ! Cons b (f x) (map a b xs ys)
+l05 ! acc
+l06 ! f x (foldr a b f acc xs)
+l07 ! Nil a
+l08 ! Cons a x (replicate a x n)
+l09 ! ys
+l10 ! []
+l11 ! drop a n xs
+l12 ! True
+l13 ! False
+
 
 

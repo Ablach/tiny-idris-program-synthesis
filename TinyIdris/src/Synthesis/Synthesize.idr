@@ -40,15 +40,22 @@ first [] = Stop
 first (Stop :: xs) = first xs
 first ((Go x) :: xs) = Go x
 
-printResults : {vars : _} -> List (Search (Term vars)) -> Core ()
+printResults : {vars : _} ->
+               List (Search (Term vars)) ->
+               Core ()
 printResults [] = pure ()
 printResults (Stop :: xs) = printResults xs
 printResults ((Go x) :: xs) = do log (show x) ; printResults xs 
 
-printFinals : {vars : _} -> {auto c : Ref Ctxt Defs} -> Env Term vars -> List (Search (Term vars)) -> Core ()
+printFinals : {vars : _} ->
+              {auto c : Ref Ctxt Defs} ->
+              Env Term vars ->
+              List (Search (Term vars)) ->
+              Core ()
 printFinals env [] = pure ()
 printFinals env (Stop :: xs) = printFinals env xs
-printFinals env (Go x :: xs) = do log (resugar $ unelab env x) ; printFinals env xs
+printFinals env (Go x :: xs) 
+  = do log (resugarTop $ unelab env x) ; printFinals env xs
 
 
 data UFail : Type where
@@ -75,15 +82,25 @@ fillMetas : {vars :_} ->
             {auto c : Ref Ctxt Defs} ->
             {auto u : Ref UST UState} -> 
             Term vars -> Env Term vars ->
-            Core (metas ** (Term (metas ++ vars), List (Term (metas ++ vars)), Env Term (metas ++ vars)))
+            Core (metas **
+              (Term (metas ++ vars),
+                List (Term (metas ++ vars)),
+                  Env Term (metas ++ vars)))
 fillMetas (Bind x (Pi n pinfo w) scope) env 
   = do let env' = Pi n pinfo w :: env
        (metas ** (tm , ts, env'')) <- fillMetas scope env'
        let tm' = App tm (Meta x [])
-       pure $ ((metas ++ [x]) ** (rewrite sym (appendAssociative metas [x] vars) in (tm , ((weakenNs metas (weaken w)) :: ts) , env''))) 
+       pure $ ((metas ++ [x]) ** 
+                (rewrite sym (appendAssociative metas [x] vars) 
+                      in (tm , 
+                           ((weakenNs metas (weaken w)) :: ts) ,
+                             env''))) 
 fillMetas tm env = pure $ ([] ** (tm , [], env))
 
-makeApps : {vars : _} -> List (List (Search (Term vars))) -> Term vars -> Core (List (Search (Term vars)))
+makeApps : {vars : _} ->
+           List (List (Search (Term vars))) ->
+           Term vars ->
+           Core (List (Search (Term vars)))
 makeApps [] x = pure $ [Go x]
 makeApps ([] :: xs) x = pure []
 makeApps (((Go y) :: ys) :: xs) x 
@@ -107,13 +124,18 @@ synthBinderArgs : {vars : _} ->
         Core (List (Search (Term vars)))
 synthBinderArgs (S depth) cs env target (name,nty) (NBind n (Pi n' pinfo tm) sc) 
  = do defs <- get Ctxt
-      let Go tm' = first $ !(synthesiseTerm depth env cs !(quote defs env tm))
+      let Go tm' = first $ !(synthesiseTerm depth env cs 
+                              !(quote defs env tm))
         | _ => pure []
-      (Go sc' :: more) <- synthBinderArgs (S depth) cs env target (name,nty) !(sc defs (toClosure env tm'))
+      (Go sc' :: more) <- synthBinderArgs (S depth) cs env 
+                                          target (name,nty)
+                                          !(sc defs (toClosure env tm'))
         | _ => pure [] 
       pure $ [Go $ App sc' tm']
-synthBinderArgs Z cs env target (name,nty) (NBind n (Pi n' pinfo tm) sc) = pure []
-synthBinderArgs depth cs env target (n,nty) tm = pure $ [Go $ Ref nty n]
+synthBinderArgs Z cs env target (name,nty) (NBind n (Pi n' pinfo tm) sc)
+  = pure []
+synthBinderArgs depth cs env target (n,nty) tm
+  = pure $ [Go $ Ref nty n]
 
 ------------
 -- MAIN
@@ -151,13 +173,16 @@ searchFunctions (S depth) cs env tm
          let (PMDef args treeCT) = definition d
           | _ => pure []
          --log $ "trying definition for " ++ (show n)
-         (metas ** (ftm , ts , e)) <- fillMetas (rewrite sym (appendNilRightNeutral vars) in (weakenNs vars (type d))) env
+         (metas ** (ftm , ts , e)) <- fillMetas 
+                                        (rewrite sym (appendNilRightNeutral vars)
+                                              in (weakenNs vars (type d))) env
          Go meta_cs <- tryUnify e (weakenNs metas tm) ftm
           | _ => pure []
          traverse deleteConstraint meta_cs
          --log "unification succedded, synthesising arguments"
          synthBinderArgs depth cs env tm (n,Func) 
-          !(nf defs env (rewrite sym (appendNilRightNeutral vars) in weakenNs vars (type d)))))) 
+          !(nf defs env (rewrite sym (appendNilRightNeutral vars)
+                              in weakenNs vars (type d)))))) 
 
 tryConstructor : {vars : _} ->
                  {auto c : Ref Ctxt Defs} ->  
@@ -173,22 +198,32 @@ tryConstructor (S depth) cs env tm n
        Just def <- lookupDef n defs
         | _ => pure []
        case definition def of    
-            (DCon tag arity) => 
-               do newRef UST initUState
-                  --log $ "Name " ++ (show n) ++ " is a data Constructor "
-                  (metas ** (ftm , ts, e))<- fillMetas (weakenNs vars (type def)) (rewrite appendNilRightNeutral vars in env)
-                  Go meta_cs <- tryUnify e (rewrite appendNilRightNeutral vars in weakenNs metas tm) ftm
-                    | _ => pure []--do log $ "unification between " ++ (show tm) ++ " and " ++ (show ftm) ++ " failed" ; pure []
-                  traverse deleteConstraint meta_cs
-                  -- log $ "unification between " ++ (show tm) ++ " and " ++ (show ftm) ++ " succeded, synthesising arguments" 
-                  synthBinderArgs depth cs env tm (n, DataCon tag arity)
-                           !(nf defs env (rewrite sym (appendNilRightNeutral vars) in weakenNs vars (type def)))
-            (TCon tag arity datacons) => do                  
-              -- log $ "Name " ++ (show n) ++ " is a type Constructor "
-              pure $ concat !(traverse id (map (\ d => tryConstructor depth cs env tm d) datacons))
-            _ => pure []
+         (DCon tag arity) => 
+            do newRef UST initUState
+               --log $ "Name " ++ (show n) ++ " is a data Constructor "
+               (metas ** (ftm , ts, e)) <- fillMetas
+                                             (weakenNs vars (type def))
+                                             (rewrite appendNilRightNeutral vars in env)
+               Go meta_cs <- tryUnify e 
+                               (rewrite appendNilRightNeutral vars in weakenNs metas tm)
+                               ftm
+                 | _ => pure [] --do log $ "unifying " ++ (show tm) ++ " and " ++ (show ftm) ++ " failed" 
+               traverse deleteConstraint meta_cs
+               -- log $ "unification between " ++ (show tm) ++ " and " ++
+               -- (show ftm) ++ " succeded, synthesising arguments" 
+               synthBinderArgs depth cs env tm (n, DataCon tag arity)
+                        !(nf defs env (rewrite sym (appendNilRightNeutral vars)
+                                            in weakenNs vars (type def)))
+         (TCon tag arity datacons) => do                  
+           -- log $ "Name " ++ (show n) ++ " is a type Constructor "
+           pure $ concat !(traverse id 
+                            (map (\ d => 
+                                    tryConstructor depth cs env tm d) datacons))
+         _ => pure []
 
-synthesiseTerm Z env cs tm = checkLocals env (getUsableEnv [] env) tm 
+
+synthesiseTerm Z env cs tm
+  = checkLocals env (getUsableEnv [] env) tm 
 synthesiseTerm depth env cs (Bind n (Pi nm pinfo tm) scope) 
   = do let env' : Env Term (n :: _) = (Lam nm pinfo tm) :: env
        --log $ "Term is a binder, adding lambda for" ++ (show n)
@@ -206,7 +241,7 @@ synthesiseTerm depth env cs tm
        locals <- checkLocals env (getUsableEnv [] env) tm
        --log "local results"
        --printResults locals
-       --log "resugared"
+       --log "resugarToped"
        --printFinals env locals
        --log "Data Constructors"
        datas <- case ret of 
@@ -221,13 +256,20 @@ synthesiseTerm depth env cs tm
        --printResults fs
        pure $ locals ++ datas ++ fs
 
-filterResults : {vars : _} -> {auto c : Ref Ctxt Defs} -> Env Term vars -> Term vars -> List (Search (Term vars)) -> Core (List (Search (Term vars)))
+
+filterResults : {vars : _} ->
+                {auto c : Ref Ctxt Defs} ->
+                Env Term vars ->
+                Term vars ->
+                List (Search (Term vars)) ->
+                Core (List (Search (Term vars)))
 filterResults env tm [] = pure []
 filterResults env tm (Go x :: xs) 
   = do Go res <- tryUnify env tm x
         | _ => filterResults env tm xs
        pure ((Go x) :: !(filterResults env tm xs))
 filterResults env tm (_ :: xs) = filterResults env tm xs
+
 
 public export
 run : {auto c : Ref Ctxt Defs} ->
@@ -244,6 +286,6 @@ run n = do Just def <- lookupDef n !(get Ctxt)
            --log "Final: " 
            let (Go result) = first res' 
             | _ => pure "No result"
-           pure $ resugar $ unelab env result 
+           pure $ resugarTop $ unelab env result 
 
 

@@ -6,33 +6,50 @@ data Nat : Type where
   Z : Nat
   S : Nat -> Nat
 
-append : (a : _) -> List a -> List a -> List a
+data Bool : Type where
+  T : Bool
+  F : Bool
+
+append : (a : Type) -> List a -> List a -> List a
 pat a : Type, ys : List a =>
-    append a (Nil a) ys = ?l1
+    append a (Nil a) ys = ?l01
 pat a : Type, x : a, xs : List a, ys : List a =>
     append a (Cons a x xs) ys
-        = ?l2
+        = ?l02
 
 data Test : Type where
      A : Test
      B : Test
 
-map : (a : _) -> (b : _) -> (a -> b) -> List a -> List b
+map : (a : Type) -> (b : Type) -> (a -> b) -> List a -> List b
 pat a : Type, b : Type, f : (a -> b) =>
-   map a b f (Nil a) = ?l3
+   map a b f (Nil a) = ?l03
 pat a : Type, b : Type, f : (a -> b), x : a, xs : List a =>
-   map a b f (Cons a x xs) = ?l4
+   map a b f (Cons a x xs) = ?l04
 
-replicate : (a : _) -> (x : a) -> Nat -> List a
+foldr : (a : Type) -> (b : Type) -> (a -> a -> b) -> (acc : a) -> List a -> b
+pat a : Type, b : Type, f : (a -> a -> b), acc : a =>
+   foldr a b f acc (Nil a) = ?l05
+pat a : Type, b : Type, f : (a -> a -> b), acc : a, x : a, xs : List a =>
+   foldr a b f acc (Cons a x xs) = ?l06
+
+replicate : (a : Type) -> (x : a) -> Nat -> List a
 pat a : Type, x : a => 
-   replicate a x Z = ?l5
+   replicate a x Z = ?l07
 pat a : Type, x : a, n : Nat => 
-   replicate a x (S n) = ?l6
+   replicate a x (S n) = ?l08
 
-drop : (a : _) -> (n : Nat) -> List a -> List a
+drop : (a : Type) -> (n : Nat) -> List a -> List a
 pat a : Type, ys : List a =>
-  drop a Z ys = ?l7
+  drop a Z ys = ?l09
 pat a : Type, n : Nat =>
-  drop a (S n) (Nil a) = ?l8
+  drop a (S n) (Nil a) = ?l10
 pat a : Type, n : Nat, x : a, xs : List a =>
-  drop a (S n) (Cons a x xs) = ?l9
+  drop a (S n) (Cons a x xs) = ?l11
+
+isEmpty : (a : Type) -> List a -> Bool
+pat a : Type =>
+  isEmpty a (Nil a) = ?l12
+pat a : Type, x : a, xs : List a =>
+  isEmpty a (Cons a x xs) = ?l13
+

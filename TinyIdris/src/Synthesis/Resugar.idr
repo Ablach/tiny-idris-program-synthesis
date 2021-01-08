@@ -42,7 +42,6 @@ resugarLam False (Just (UN x)) scope
 resugarLam False (Just (MN x y)) scope
   = "_ " ++ " => " ++ resugar scope
 
-export
 resugar : RawImp -> String
 resugar (IVar (UN x)) = x
 resugar (IVar (MN x y)) = "_"
@@ -65,3 +64,12 @@ resugar (IHole (MN x y)) = "?_"
 resugar Implicit = "_"
 resugar IType = " : "
 
+export
+resugarTop : RawImp -> String
+resugarTop (IApp x y)
+  = let (f , as) = getFnArgs x in 
+        (resugar f) ++ " " ++ (resugar y) ++ " " ++ (concat $ intersperse " " (map resugar as))
+  where getFnArgs : RawImp -> (RawImp , List (RawImp))
+        getFnArgs (IApp z w) = let (f , args) = getFnArgs z in (f , (w :: args))
+        getFnArgs fn = (fn , [])
+resugarTop tm = resugar tm

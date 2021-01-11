@@ -80,5 +80,3 @@ runTests : {auto c : Ref Ctxt Defs} ->
 runTests = 
  log $ "Total successes " ++ 
        (show $ sum !(traverse id !(mapDefs' test)))
-
-

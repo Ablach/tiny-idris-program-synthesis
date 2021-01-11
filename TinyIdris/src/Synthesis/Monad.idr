@@ -31,3 +31,7 @@ mutual
                        Stop => Stop
                        (Go z) => Go z
 
+public export
+travS : (a -> Core a) -> Search a -> Core (Search a)
+travS f Stop = pure Stop
+travS f (Go x) = pure $ Go !(f x)

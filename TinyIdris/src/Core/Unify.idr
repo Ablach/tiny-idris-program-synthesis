@@ -370,7 +370,7 @@ mutual
             cs' <- unify env' (refsToLocals (Add x xn None) tmx)
                               (refsToLocals (Add x xn None) tmy)
             pure $ union ct cs'
-    unify env a@(NBind x y z) b@ (NBind u v w) = convertError env a b 
+    unify env a@(NBind x y z) b@(NBind u v w) = convertError env a b 
     -- Matching constructors, reduces the problem to unifying the arguments
     unify env nx@(NDCon n t a args) ny@(NDCon n' t' a' args')
         = if t == t'

@@ -56,4 +56,5 @@ processDef n clauses
     
          -- Update the definition with the compiled tree
          updateDef n (record { definition = PMDef args tree })
+         addFunction n (type gdef)
          coreLift $ putStrLn $ "Processed " ++ show n

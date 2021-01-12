@@ -115,3 +115,12 @@ mapDefs f = pure $ values $ map f !(get Ctxt)
 export 
 traverseDefs : {auto c : Ref Ctxt Defs} -> ((Name, GlobalDef) -> Core ()) -> Core ()
 traverseDefs f = do traverse f (toList !(get Ctxt)) ; pure ()
+
+export
+defsLength : {auto c : Ref Ctxt Defs} -> Core Nat
+defsLength = pure $ length $ toList !(get Ctxt)
+                                
+                               
+                              
+                             
+

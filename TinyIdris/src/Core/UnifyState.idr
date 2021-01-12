@@ -36,10 +36,11 @@ record UState where
   constraints : SortedMap Int Constraint -- map for finding constraints by ID
   nextName : Int
   nextConstraint : Int
+  functions : SortedMap Name (Term [])
 
 export
 initUState : UState
-initUState = MkUState empty empty empty 0 0
+initUState = MkUState empty empty empty 0 0 empty
 
 export
 data UST : Type where
@@ -174,12 +175,9 @@ newConstant {vars} env tm ty constrs
     envArgs = let args = reverse (mkConstantAppArgs {done = []} env []) in
                   rewrite sym (appendNilRightNeutral vars) in args
 
-export
-genVarName : {auto c : Ref Ctxt Defs} ->
-             {auto u : Ref UST UState} ->
-             String -> Core Name
-genVarName str
-    = do ust <- get UST
-         put UST (record { nextName $= (+1) } ust)
-         pure (MN str (nextName ust))
 
+export 
+addFunction : {auto u : Ref UST UState} -> 
+              Name -> Term [] -> Core ()
+addFunction n t = do ust <- get UST
+                     put UST (record {functions $= insert n t} ust)

@@ -1,6 +1,6 @@
 module Synthesis.Test
 
-import Synthesis.Synthesize
+import Synthesis.Nsynth
 
 import Core.Core
 import Core.Context
@@ -52,12 +52,13 @@ test ((UN n),d)
        Just ans <- lookupAnswer n
         | _ => do log "no answer" ; pure 0
        res <- run (UN n)
-       let result = if (res == ans)
+       let test = ((trim res) == (trim ans))
+       let result = if test
                        then "Success"
                        else "Fail"
        log $ "Test: " ++ n ++ " | Result " ++ result ++ 
             " | Expected: " ++ ans ++ " | Actual: " ++ res
-       if (res == ans) then pure 1 else pure 0
+       if test then pure 1 else pure 0
 test (_,d) = pure 0
 
 export 

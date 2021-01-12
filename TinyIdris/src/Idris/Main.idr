@@ -15,7 +15,7 @@ import TTImp.TTImp
 
 import Parser.Source
 
-import Synthesis.Synthesize
+import Synthesis.Nsynth
 import Synthesis.Unelab
 import Synthesis.Resugar
 import Synthesis.Monad

@@ -332,7 +332,7 @@ mutual
              empty <- clearDefs defs
              z' <- quote empty env z
              cs <- unify env z v
-             zn <- genVarName "x"
+             zn <- genName "x"
              let env' : Env Term (x :: _)
                       = (Pi n' Explicit z') :: env
              case constraints cs of
@@ -358,7 +358,7 @@ mutual
             emp <- clearDefs defs
             tx' <- quote emp env tx
             ct <- unify env tx ty
-            xn <- genVarName "x"
+            xn <- genName "x"
             let env' : Env Term (x :: _)
                      = Lam x' Explicit tx' :: env
             txtm <- quote emp env tx

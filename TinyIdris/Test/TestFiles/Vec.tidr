@@ -35,5 +35,5 @@ drop : (a : _) -> (n : _) -> (m : _) -> Vec (add n m) a -> Vec m a
 pat a : Type, n : Nat, m : Nat, ys : Vec m a =>
   drop a Z m ys = ?v07
 pat a : Type, n : Nat, m : Nat, x : a, xs : Vec (add n m) a =>
-  drop a (S n) m (Cons a n x xs) = ?v08
+  drop a (S n) m (Cons a m x xs) = ?v08
 

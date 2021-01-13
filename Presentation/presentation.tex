@@ -10,10 +10,10 @@
 \usetheme{Madrid}
 \author{Scott Mora}
 \date{01-2021}
-\title{Tiny Idris Program Synthesis - 408 Progress Presentation}
+\title{Tiny Idris Program Synthesis}
 \hypersetup{
  pdfauthor={Scott Mora},
- pdftitle={Tiny Idris Program Synthesis - 408 Progress Presentation},
+ pdftitle={Tiny Idris Program Synthesis},
  pdfcreator={Emacs 27.1 (Org mode 9.3)}, 
  pdflang={English}}
 \begin{document}
@@ -23,8 +23,10 @@
 \begin{frame}[fragile]{Structure}
   \begin{itemize}
   \item {Introduce the structure of functional programs}
-  \item {Look at the problem of synthesis.}
+  \item {Introduce the project.}
+  \item {Look at existing systems.}
   \item {Look at the current progress.}
+  \item {Introduce the testing strategy and future development.}
   \item {Short demo}
   \end{itemize}
 \end{frame}
@@ -56,6 +58,12 @@
              Cons : Integer -> IntegerList -> IntegerList
         \end{minted}
       \end{block}
+
+      \begin{block}{List example}
+        \begin{minted}[]{idris}
+          1 :: (2 :: (3 :: []))
+        \end{minted}
+      \end{block}
 \end{frame}
 
 \begin{frame}[fragile]{Type Signatures \& Function Definitions}
@@ -74,11 +82,28 @@
 \end{frame}
 
 \begin{frame}[fragile]{Polymorphism}
-      \begin{block}{Lists}
+      \begin{block}{Polymorphic Lists}
         \begin{minted}[]{idris}
           data List : Type -> Type where
              Nil  : List a
              Cons : a -> List a -> List a
+        \end{minted}
+      \end{block}
+      \begin{block}{Lists}
+        \begin{minted}[]{idris}
+          bList : List Boolean
+          bList = True :: False :: True :: []
+
+          iList : List Integer
+          iList = 1 :: 2 :: 3 :: []
+        \end{minted}
+      \end{block}
+
+      \begin{block}{Polymorphic isEmpty}
+        \begin{minted}[]{idris}
+          isEmpty : List a -> Bool
+          isEmpty Nil       = True
+          isEmpty Cons i is = False
         \end{minted}
       \end{block}
 \end{frame}
@@ -128,6 +153,10 @@
   \item Began having type information available, but without using it.
   \item Relied on input output examples, and other specifications. 
   \item Progressively use of type information increased.
+  \item Greatly improved performance when enough type information is
+    available.
+  \item Struggles with less specification, eg. Lists.
+  \item All require verbose specifications.
   \end{itemize}
 \end{frame}
 
@@ -137,6 +166,9 @@
   \item Can be general or more specialised.
   \item Idris has a more general approcach.
   \item Agda and Coq have more hardcoded information using tactics.
+  \item Packaged in a more useful manner than synthesis systems.
+  \item Perform better than earlier systems.
+  \item Trade offs are made with more advanced systems such as Synquid.
   \end{itemize}
 \end{frame}
 \begin{frame}[fragile]{Implementation}
@@ -158,8 +190,14 @@
 
 \begin{frame}[fragile]{Testing}
   \begin{itemize}
-  \item Tests have been divided by common structures.
+  \item Tests have been divided by common structures,
+    each serving a purpose.
   \item Lists, Vectors, Equality, Sorting and AVL trees.
+  \item Vectors are the simplest.
+  \item Lists test lack of type information.
+  \item Equality compares to more specialised proof search systems.
+  \item Sorting looks at case splitting and use of predicates.
+  \item AVL are considerably larger.
   \item Synthesis can be called individually or in batches based
     on files.
   \item Two files partially implemented, currently improvements

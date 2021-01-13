@@ -1,5 +1,0 @@
-\begin{Verbatim}[commandchars=\\\{\}]
-          \PYG{k+kr}{data} \PYG{k+kt}{IntegerList} \PYG{o+ow}{:} \PYG{k+kt}{Type} \PYG{k+kr}{where}
-             \PYG{n+nf}{Nil} \PYG{o+ow}{:} \PYG{k+kt}{IntegerList}
-             \PYG{n+nf}{Cons} \PYG{o+ow}{:} \PYG{k+kt}{Integer} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{IntegerList} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{IntegerList}
-\end{Verbatim}

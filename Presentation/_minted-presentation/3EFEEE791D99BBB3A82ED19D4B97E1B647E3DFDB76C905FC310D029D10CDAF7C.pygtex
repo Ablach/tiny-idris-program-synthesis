@@ -1,5 +1,0 @@
-\begin{Verbatim}[commandchars=\\\{\}]
-          \PYG{n+nf}{isEmpty} \PYG{o+ow}{:} \PYG{k+kt}{IntegerList} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{Bool}
-          isEmpty \PYG{k+kt}{Nil}       \PYG{o+ow}{=} \PYG{k+kt}{True}
-          isEmpty \PYG{k+kt}{Cons} i is \PYG{o+ow}{=} \PYG{k+kt}{False}
-\end{Verbatim}

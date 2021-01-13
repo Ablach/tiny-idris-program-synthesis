@@ -1,6 +1,0 @@
-\frametitle{Future}
-\begin{itemize}
-  \item Improve base functionallity.
-  \item Introduce case splitting definitions.
-  \item Introduce better heuriustics for choosing an acceptable solution.
-  \end{itemize}

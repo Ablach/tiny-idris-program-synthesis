@@ -132,13 +132,13 @@ newMeta : {vars : _} ->
           {auto c : Ref Ctxt Defs} ->
           {auto u : Ref UST UState} ->
           Env Term vars -> Name -> Term vars -> Def ->
-          Core (Term vars, GlobalDef)
+          Core (Term vars)
 newMeta {vars} env n ty def
     = do let hty = abstractEnvType env ty
          let hole = newDef hty def
          addDef n hole
          addHoleName n
-         pure (Meta n envArgs, hole)
+         pure (Meta n envArgs)
   where
     envArgs : List (Term vars)
     envArgs = let args = reverse (mkConstantAppArgs {done = []} env []) in

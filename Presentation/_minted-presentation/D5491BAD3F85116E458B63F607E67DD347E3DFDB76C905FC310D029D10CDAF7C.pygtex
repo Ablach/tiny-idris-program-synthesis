@@ -1,5 +1,0 @@
-\begin{Verbatim}[commandchars=\\\{\}]
-          \PYG{k+kr}{data} \PYG{k+kt}{List} \PYG{o+ow}{:} \PYG{k+kt}{Type} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{Type} \PYG{k+kr}{where}
-             \PYG{n+nf}{Nil}  \PYG{o+ow}{:} \PYG{k+kt}{List} a
-             \PYG{n+nf}{Cons} \PYG{o+ow}{:} a \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{List} a \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{List} a
-\end{Verbatim}

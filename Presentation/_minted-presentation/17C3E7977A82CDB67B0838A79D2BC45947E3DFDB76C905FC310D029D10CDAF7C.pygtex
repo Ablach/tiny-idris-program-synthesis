@@ -1,0 +1,5 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+          \PYG{k+kr}{data} \PYG{k+kt}{Vect} \PYG{o+ow}{:} \PYG{k+kt}{Num} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{Type} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{Type} \PYG{k+kr}{where}
+             \PYG{n+nf}{Nil}  \PYG{o+ow}{:} \PYG{k+kt}{Vect} \PYG{k+kt}{Zero} a
+             \PYG{n+nf}{Cons} \PYG{o+ow}{:} a \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{Vect} n a \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{Vect} \PYG{o+ow}{(}\PYG{k+kt}{OnePlus} n\PYG{o+ow}{)} a
+\end{Verbatim}

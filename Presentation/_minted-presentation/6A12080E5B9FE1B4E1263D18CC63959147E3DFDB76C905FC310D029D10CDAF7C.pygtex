@@ -1,0 +1,3 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+          \PYG{n+nf}{max} \PYG{o+ow}{:} \PYG{k+kt}{IntegerList} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{Integer}
+\end{Verbatim}

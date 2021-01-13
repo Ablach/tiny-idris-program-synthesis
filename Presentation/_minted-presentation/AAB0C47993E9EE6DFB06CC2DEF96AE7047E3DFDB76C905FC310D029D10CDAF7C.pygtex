@@ -1,0 +1,5 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+          \PYG{k+kr}{data} \PYG{k+kt}{Num} \PYG{o+ow}{:} \PYG{k+kt}{Type} \PYG{k+kr}{where}
+            \PYG{n+nf}{Zero} \PYG{o+ow}{:} \PYG{k+kt}{Num}
+            \PYG{n+nf}{OnePlus} \PYG{o+ow}{:} \PYG{k+kt}{Num} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{Num}
+\end{Verbatim}

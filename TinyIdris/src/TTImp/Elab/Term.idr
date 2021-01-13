@@ -143,7 +143,7 @@ checkTerm env Implicit (Just exp)
          nm <- genName "_"
          -- Create a metavariable, and hope that it gets solved via
          -- checkExp later
-         metaval <- newMeta env nm expty Hole
+         (metaval, de) <- newMeta env nm expty Hole
          pure (metaval, exp)
 checkTerm env IType exp = checkExp env TType gType exp
 
@@ -154,5 +154,5 @@ checkTerm env (IHole s) (Just gexp) =
      Nothing <- lookupDef s defs
       | _ => throw (GenericMsg $ show s ++  " already defined")
      exp <- getTerm gexp
-     metaval <- newMeta env s exp (MetaVar vars env exp)
+     (metaval, de) <- newMeta env s exp (MetaVar vars env exp)
      pure (metaval , gexp) 

@@ -18,7 +18,7 @@ pat a : Type, m : Nat, ys : Vec m a =>
     append a Z m (Nil a) ys = ?v01
 pat a : Type, n : Nat, x : a, xs : Vec n a, m : Nat, ys : Vec m a =>
     append a (S n) m (Cons a n x xs) ys = ?v02
-
+{-
 map : (a : _) -> (b : _) -> (n : Nat) -> (a -> b) -> Vec n a -> Vec n b
 pat a : Type, b : Type, f : (a -> b) =>
    map a b Z f (Nil a) = ?v03
@@ -36,4 +36,4 @@ pat a : Type, n : Nat, m : Nat, ys : Vec m a =>
   drop a Z m ys = ?v07
 pat a : Type, n : Nat, m : Nat, x : a, xs : Vec (add n m) a =>
   drop a (S n) m (Cons a m x xs) = ?v08
-
+-}

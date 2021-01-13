@@ -30,6 +30,10 @@ mutual
     (Go x) >>= k = case k x of
                        Stop => Stop
                        (Go z) => Go z
+export
+Show a => Show (Search a) where
+  show Stop = "Stop"
+  show (Go x) = show x
 
 public export
 stop : Core (Search a)

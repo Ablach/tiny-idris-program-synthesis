@@ -1,5 +1,5 @@
 module Synthesis.Synthesize 
-
+{-
 import Core.Context
 import Core.Core
 import Core.Env
@@ -416,4 +416,4 @@ run n = do Just def <- lookupDef n !(get Ctxt)
             | _ => pure "No result"
            pure $ resugarTop $ unelab env (fst result)
 
-
+-}

@@ -23,7 +23,7 @@
 \begin{frame}[fragile]{Structure}
   \begin{itemize}
   \item {Introduce the structure of functional programs}
-  \item {Look at synthesis systems.}
+  \item {Look at the problem of synthesis.}
   \item {Look at the current progress.}
   \item {Short demo}
   \end{itemize}
@@ -58,21 +58,13 @@
       \end{block}
 \end{frame}
 
-\begin{frame}[fragile]{Type Signatures}
-      \begin{block}{isEmpty}
+\begin{frame}[fragile]{Type Signatures \& Function Definitions}
+      \begin{block}{Type Signature}
         \begin{minted}[]{idris}
           isEmpty : IntegerList -> Bool
         \end{minted}
       \end{block}
-      \begin{block}{max}
-        \begin{minted}[]{idris}
-          max : IntegerList -> Integer
-        \end{minted}
-      \end{block}
-\end{frame}
-
-\begin{frame}[fragile]{Function Definitions}
-      \begin{block}{isEmpty}
+      \begin{block}{Function Definition}
         \begin{minted}[]{idris}
           isEmpty : IntegerList -> Bool
           isEmpty Nil       = True
@@ -108,33 +100,59 @@
       \end{block}
 \end{frame}
 
-\begin{frame}[fragile]{Synthesis}
+\begin{frame}[fragile]{Specification}
   \begin{itemize}
   \item Similar structures can lead to repetitive code.
   \item Boilerplate can lead to human error.
-  \item We want to search all constructable terms. 
-  \item The strong type system can be used to reduce
-    the possible terms to a searchable amount. 
+  \item Tiny Idris is a dependently typed functional language.
+  \item Extend the language with program synthesis capabilities via holes. 
+    \begin{block}{Hole Driven Development}
+      \begin{minted}[]{idris}
+        append : (a : _) -> (n : _) -> (m : _) ->
+                 Vect n a -> Vect m a ->
+                 Vect (add n m) a
+        pat a : Type, m : Num, ys : Vect m a =>
+          append a Zero m (Nil a) ys = ?v01
+        pat a : Type, n : Num, x : a, xs : Vect n a,
+            m : Num, ys : Vect m a =>
+          append a (OnePlus n) m (Cons a n x xs) ys
+              = ?v02
+      \end{minted}
+    \end{block}
   \end{itemize}
 \end{frame}
 
-\begin{frame}[fragile]{Previous Systems}
+\begin{frame}[fragile]{Specialised Systems}
   \begin{itemize}
-  \item Began using little type information.
-  \item Progressively use more, following similar patterns.
   \item Specialised tools such as Leon, Myth, Synquid, ReSyn.
-  \item Proof search tools implemented in languages such as
-    Agda, Idris and Coq.
+  \item Began having type information available, but without using it.
+  \item Relied on input output examples, and other specifications. 
+  \item Progressively use of type information increased.
   \end{itemize}
 \end{frame}
 
+\begin{frame}[fragile]{Built in to Languages}
+  \begin{itemize}
+  \item Developed from automatic proof search tools.
+  \item Can be general or more specialised.
+  \item Idris has a more general approcach.
+  \item Agda and Coq have more hardcoded information using tactics.
+  \end{itemize}
+\end{frame}
 \begin{frame}[fragile]{Implementation}
   \begin{itemize}
+  \item Identified holes during parsing along with required information.
+  \item 'RawImp' holes are elabourated to the core representation.
+  \item Uses built in unification to check if guesses are valid.
   \item Checks if any local variables are suitable.
   \item Checks if any data constructors will
     result in a valid term, and attempts to synthesise arguments.
   \item Checks if any functions would result in a valid term and
     synthesises arguments if so.
+  \item Each returns a list of candidates which can be sorted based on some
+    heuriustic.
+  \item Unelabourates to RawImp and re-sugars to a string of
+    language syntax that may be inserted.
   \end{itemize}
 \end{frame}
 
@@ -144,14 +162,18 @@
   \item Lists, Vectors, Equality, Sorting and AVL trees.
   \item Synthesis can be called individually or in batches based
     on files.
+  \item Two files partially implemented, currently improvements
+    are required before more tests are.
   \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]{Future}
   \begin{itemize}
   \item Improve base functionallity.
+  \item Finalise the test suite.
   \item Introduce case splitting definitions.
   \item Introduce better heuriustics for choosing an acceptable solution.
+  \item Evaluate the performance at each step.
   \end{itemize}
 \end{frame}
 \end{document}

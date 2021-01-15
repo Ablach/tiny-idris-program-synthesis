@@ -181,12 +181,22 @@ fillMetas env (NBind n (Pi n' pinfo tm) sc)
        tm' <- newMeta env nm ty Hole
        (f, as) <- fillMetas env !(sc defs (toClosure env tm'))
        let sh' = concat $ intersperse " " !(traverse id !(mapDefs' (\ (n,d) => pure (show n))))
-       Just def <- lookupDef nm defs
-        | _ => do log sh'; log (show nm) ; ?fds
-       log "found"
+       Just def <- lookupDef nm !(get Ctxt) 
+        | _ => ?impossible 
        pure (f , ((type def), nm) :: as)
 fillMetas env tm = pure (tm , [])
 
+
+tryWhile : {vars : _} -> 
+           {auto c : Ref Ctxt Defs} ->
+           {auto u : Ref UST UState} -> 
+           (depth : Nat) ->
+           (env : Env Term vars) -> 
+           (target : Term vars) -> 
+           (args : List (Term vars , Name)) ->
+           Core (List (Search (Term vars)))
+tryWhile depth env target [] = ?fdsf_1
+tryWhile depth env target (x :: xs) = ?fdsf_2
 
 tryClosed : {vars : _} -> 
             {auto c : Ref Ctxt Defs} ->
@@ -199,19 +209,15 @@ tryClosed : {vars : _} ->
 tryClosed Z _ _ _ _ _ = none
 tryClosed (S depth) env target n nty ct
   = do defs <- get Ctxt
-       log $ "trying " ++ (show target) ++ " with " ++ (showN n)
+       --log $ "trying " ++ (show target) ++ " with " ++ (showN n)
        (tm, args) <- fillMetas env !(nf defs env (rewrite sym (appendNilRightNeutral vars) in weakenNs vars ct))
-       log "args"
-       log $ concat $ intersperse "\n" $  map (\(tm , nm) => (showN nm) ++ " of type " ++ (showT tm)) args
-       log "args ended"
        Go ures <- tryUnify env target !(quote defs env tm)
         | _ => none
-       log "unification succeded with constraints: "
-       log !(showCs $ constraints ures)   
-       log "trying args"
        let weakened = map (\ (a,b) => (weakenNs vars a , b)) args
+       
        args' <- traverse (synthesiseTerm depth env) (rewrite sym (appendNilRightNeutral vars) in weakened)
        makeApps env (Ref nty n) args'
+       ?fsdfd
 ------------
 -- MAIN
 ------------
@@ -225,10 +231,12 @@ checkLocals : {vars : _} ->
               Core (List (Search (Term vars)))
 checkLocals env ((Local idx p) :: xs) tm 
   = 
- do Go ures <- tryUnify env tm (binderType $ getBinder p env)
-      | _ => none
+ do --log $ "in locals, checking " ++ (show (binderType $ getBinder p env)) ++ " with " ++ (show tm)
+    Go ures <- tryUnify env tm (binderType $ getBinder p env)
+      | _ => checkLocals env xs tm
     let [] = constraints ures
       | _ => checkLocals env xs tm
+    --log "success"
     pure $ (Go (Local idx p)) :: !(checkLocals env xs tm) 
 checkLocals env (_ :: xs) tm = checkLocals env xs tm
 checkLocals _ [] _ = none
@@ -244,8 +252,7 @@ searchFunctions Z _ _ = none
 searchFunctions depth env tm 
   = do ust <- get UST
        let fs = Data.SortedMap.toList $ functions ust
-       log $ show $ length fs
-       --log $ "in search for " ++ (show tm) ++ " with " ++ (show $ length fs)          
+       --log "in functions"
        ts <- traverse (\(n,y) => tryClosed depth env tm n Func y) fs 
        pure $ concat ts
                                   
@@ -271,16 +278,20 @@ tryConstructor depth env tm n
         | _ => none
        case definition def of    
          (DCon tag arity) => 
-            tryClosed depth env tm n (DataCon tag arity) (type def)
+          do --log "in datacons"
+             tryClosed depth env tm n (DataCon tag arity) (type def)
          (TCon tag arity datacons) => 
-           pure $ concat !(traverse id 
+          do --log "trying type cons"
+             pure $ concat !(traverse id 
                             (map (\ d => 
                                     tryConstructor depth env tm d) datacons))
          _ => none
 
 
 synthesiseTerm Z env (tm,n)
-  = checkLocals env (getUsableEnv [] env) tm
+  = do --log $ "env " ++ (showE env)
+       --log $ "usable " ++ (show (getUsableEnv [] env) )
+       checkLocals env (getUsableEnv [] env) tm
 synthesiseTerm depth env ((Bind n (Pi nm pinfo tm) scope) , name)
   = do let env' : Env Term (n :: _) = (Lam nm pinfo tm) :: env
        --log $ "Term is a binder, adding lambda for" ++ (show n)
@@ -291,6 +302,8 @@ synthesiseTerm depth env ((Bind n (Pi nm pinfo tm) scope) , name)
                              res) results
 synthesiseTerm depth env (tm,n)
   = do let (ret , args) = getFnArgs tm
+       --log $ "env " ++ (showE env)
+       --log $ "usable " ++ (show (getUsableEnv [] env) )
        locals <- checkLocals env (getUsableEnv [] env) tm 
        datas <- case ret of 
                   (Ref (TyCon tag arity) n) 
@@ -304,13 +317,52 @@ synthesiseTerm depth env (tm,n)
        printFinals env $ (map (map fst)) datas
        log "function results"
        printFinals env $ (map (map fst)) fs -}
+       --case (locals ++ datas ++ fs) of
+         --   [] => log $ "no results found for " ++ (show tm)
+           -- (x :: xs) => log $ "results found for " ++ (show tm)
        pure $ locals ++ datas ++ fs 
+
+
+tt : {auto c : Ref Ctxt Defs} -> 
+     {auto u : Ref UST UState} ->
+     Core ()
+tt = do defs <- get Ctxt
+        Just nil <- lookupDef (UN "Nil") defs
+          | _ => log "no nil"
+        Just tm <- lookupDef (UN "v02") defs
+          | _ => log "no tm"
+        let (MetaVar vars env ret) = definition tm
+          | _ => log "not meta"
+        let us = (getUsableEnv [] env) 
+        log $ "env " ++ (showE env)
+        log $ "usable " ++ (show us)
+        log $ concat $ intersperse " ::  " $ map (\ l => case l of
+                                                Local idx p => show (binderType $ getBinder p env)
+                                                _ => "not local") us
+        ls <- checkLocals env us ret
+        case ls of 
+             [] => log "none"
+             (x :: xs) => log "some"
+        {-
+        nfnil <- nf defs env (rewrite sym (appendNilRightNeutral vars) in weakenNs vars (type nil))
+        empty <- clearDefs defs
+        let (NBind n (Pi n' pinfo tx) sc) = nfnil
+          | _ => log "nfnil not binder"
+        ty <- quote empty env tx
+        nm <- genName "mta"
+        tm' <- newMeta env nm ty Hole
+        log (show tm')
+        case !(lookupDef nm !(get Ctxt)) of
+             Nothing => log $ (show nm) ++ " not there"
+             (Just x) => log "there!"
+             -}
+
 
 public export
 run : {auto c : Ref Ctxt Defs} ->
       {auto u : Ref UST UState} ->
       Name -> Core String
-
+--run n = do tt ; pure ""
 run n = do Just def <- lookupDef n !(get Ctxt)
             | _ => pure "Invalid Name" 
            ust <- get UST
@@ -319,10 +371,9 @@ run n = do Just def <- lookupDef n !(get Ctxt)
            log $ concat s
            let (MetaVar vars env retTy) = definition def
             | _ => pure "Invalid Name"
-           res <- (synthesiseTerm 2 {vars = vars} env (retTy, n)) 
+           res <- (synthesiseTerm 3 {vars = vars} env (retTy, n)) 
            let (Go result) = first res
             | _ => pure "No result"
            pure $ resugarTop $ unelab env result
- 
-
+           
 

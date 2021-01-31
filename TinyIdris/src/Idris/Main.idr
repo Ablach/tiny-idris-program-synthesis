@@ -15,10 +15,9 @@ import TTImp.TTImp
 
 import Parser.Source
 
-import Synthesis.Vthree
+import Synthesis.Synthesise
 import Synthesis.Unelab
 import Synthesis.Resugar
-import Synthesis.Monad
 import Synthesis.Test
 
 import System
@@ -61,9 +60,7 @@ runAuto s =
          | Left err => do coreLift $ printLn err
                           repl 
      case ttexp of 
-        (IVar x) => coreLift $ putStrLn $ case x of
-                                               (UN y) => ?fff_1
-                                               (MN y z) => ?fff_2
+        (IVar x) => log $ !(run x)
         _ => coreLift $ putStrLn $ "Not a hole or var"
      repl
      

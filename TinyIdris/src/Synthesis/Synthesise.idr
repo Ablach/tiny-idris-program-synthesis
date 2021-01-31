@@ -1,5 +1,7 @@
 module Synthesis.Synthesise
 
+import Core.CaseBuilder
+import Core.CaseTree
 import Core.Context
 import Core.Core
 import Core.Env
@@ -15,19 +17,13 @@ import TTImp.TTImp
 import Synthesis.Rescope
 import Synthesis.Unelab
 import Synthesis.Resugar
-import Synthesis.Monad 
+
 
 import Data.List
 import Data.Nat
 import Data.Maybe
 import Data.Either
 import Data.SortedMap
-
-record Attempt (vars : List Name) where
-  constructor MkAttempt
-  n : Name 
-  nty : NameType
-  norm : NF vars
 
 record Search (vars : List Name) where
  constructor MkSearch
@@ -59,6 +55,46 @@ tryUnify env a b
        if !(get UFail) 
           then pure Nothing 
           else pure $ Just (ures)
+
+getRef : {vars :_} -> 
+         {auto c : Ref Ctxt Defs} ->
+         {auto u : Ref UST UState} ->
+         Name -> Core (Term vars)
+getRef n = do defs <- get Ctxt
+              Just def <- lookupDef n defs
+                | _ => ?nah 
+              case definition def of 
+                   (DCon tag arity) => pure $ Ref (DataCon tag arity) n
+                   _ => ?nah2                
+                
+replaceTop : {n : _} -> {vars : _} ->
+             Env Term (x :: vars) ->
+             Term vars ->
+             Env Term (x :: vars) 
+replaceTop ((Lam y w v) :: z) tm = ((Lam y w tm) :: z)  
+replaceTop ((Pi y w v) :: z) tm = ((Pi y w tm) :: z)  
+replaceTop ((PVar y w) :: z) tm = ((PVar y tm) :: z)  
+replaceTop ((PVTy y) :: z) tm = ((PVTy y) :: z)
+
+splitEnv : {vars : _} -> 
+           {auto c : Ref Ctxt Defs} ->
+           {auto u : Ref UST UState} ->
+           Env Term vars -> 
+           Core (Either (Env Term vars) (List (Env Term vars)))
+splitEnv [] = pure $ Left []
+splitEnv {vars = (x :: vars')} e@((PVar n (Ref (TyCon tag arity) n')) :: env') 
+ = do defs <- get Ctxt
+      Left env'' <- splitEnv env' 
+       | Right env'' => pure $ Right $ map ((PVar n (Ref (TyCon tag arity) n')) ::) env'' 
+      Just ty <- lookupDef n' defs
+       | _ => ?shouldnt_happen
+      let (TCon tag' arity' datas) = definition ty
+       | _ => ?impossible2
+      ts <- traverse (getRef {vars = vars'}) datas
+      pure $ Right $ map (replaceTop e) ts
+splitEnv (bdr :: env) = case !(splitEnv env) of 
+                        (Left x) => pure $ Left $ (bdr :: x)
+                        (Right x) => pure $ Right $ map (bdr ::) x
 
 
 fillMetas : {vars : _} -> 
@@ -154,8 +190,38 @@ tryLocals s@(MkSearch depth name env target) (l@(Local idx p) :: usable)
 tryLocals _ _ = pure []
 
 
+synthesiseWorlds : {vars : _} ->
+                   {auto c : Ref Ctxt Defs} -> 
+                   {auto u : Ref UST UState} -> 
+                   List (Search vars) ->
+                   Core (Maybe (List (Search vars, Term vars)))
+synthesiseWorlds [] = pure $ Just []
+synthesiseWorlds (x :: xs) = do (t :: ts) <- synthesise x
+                                 | _ => pure Nothing
+                                Just clauses <- synthesiseWorlds xs
+                                 | _ => pure Nothing
+                                pure (Just $ (x , t) :: clauses)
+
+getClause : {vars : _} -> 
+            {auto c : Ref Ctxt Defs} ->
+            {auto u : Ref UST UState} ->
+            (Search vars , Term vars) -> 
+            Core Clause
+getClause (s,t) = ?dfsfsd
+
+synthesisePM : {vars : _} -> 
+               {auto c : Ref Ctxt Defs} -> 
+               {auto u : Ref UST UState} ->
+               List (Search vars) -> Name -> Term [] -> Core (Maybe Def)
+synthesisePM ss n ty = do Just worlds <- synthesiseWorlds ss
+                           | _ => pure Nothing
+                          clauses <- traverse getClause worlds
+                          (as ** ct) <- getPMDef n ty clauses
+                          pure $ Just $ PMDef as ct
+
+
 synthesise (MkSearch depth name env (Bind n (Pi n' pinfo tm) scope)) 
- = pure $ map (\ st => Bind n (Lam n' pinfo tm) st)
+ = pure $ map (Bind n (Lam n' pinfo tm))
               !(synthesise (MkSearch depth n (Lam n' pinfo tm :: env) scope))
 synthesise s@(MkSearch d name env TType) 
   = pure $ !(tryLocals s (getUsableEnv [] env)) ++ !typeRefs
@@ -187,9 +253,21 @@ run : {auto c : Ref Ctxt Defs} ->
 run n = do Just def <- lookupDef n !(get Ctxt)
             | _ => pure "Invalid Name" 
            ust <- get UST
-           let (MetaVar vars env retTy) = definition def
-            | _ => pure "Invalid Name"
-           (r :: res) <- synthesise (MkSearch 4 n env retTy)
-            | _ => pure "No result"
-           pure $ resugarTop $ unelab env r
+           case definition def of
+               None => 
+                do ?dassd 
+               (MetaVar vars env retTy) => 
+                do (r :: rs) <- synthesise (MkSearch 4 n env retTy)                        
+                    | _ => pure "No match"
+                   -- here we want to add in some heuristic for sorting
+                   pure $ resugarTop $ unelab env r
+               _ => pure "Invalid definition"
+
+{-
+           Right envs <- splitEnv env
+            | _ => pure "No match"
+           let ss = map (\ e => MkSearch 3 n e retTy) envs
+           res <- synthesisePM ss ?dfs ?tysif
+           ?fdsfd
            
+  -}         

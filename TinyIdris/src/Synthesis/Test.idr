@@ -1,6 +1,6 @@
 module Synthesis.Test
 
-import Synthesis.Vthree
+import Synthesis.Synthesise
 
 import Core.Core
 import Core.Context

@@ -15,7 +15,7 @@ import TTImp.TTImp
 
 import Parser.Source
 
-import Synthesis.Nsynth
+import Synthesis.Vthree
 import Synthesis.Unelab
 import Synthesis.Resugar
 import Synthesis.Monad
@@ -34,8 +34,8 @@ isAuto s = case (isPrefixOf "auto" s) of
                 False => Nothing
 
 isTestOne : String -> Maybe (String)
-isTestOne s = case (isPrefixOf "testOne" s) of 
-                True => Just (strSubstr 8 (strLength s) s)
+isTestOne s = case (isPrefixOf "t" s) of 
+                True => Just (strSubstr 2 (strLength s) s)
                 False => Nothing
 
 isTest : String -> Bool
@@ -61,7 +61,9 @@ runAuto s =
          | Left err => do coreLift $ printLn err
                           repl 
      case ttexp of 
-        (IVar x) => coreLift $ putStrLn $ !(run x) 
+        (IVar x) => coreLift $ putStrLn $ case x of
+                                               (UN y) => ?fff_1
+                                               (MN y z) => ?fff_2
         _ => coreLift $ putStrLn $ "Not a hole or var"
      repl
      
@@ -80,14 +82,15 @@ repl = do coreLift $ putStr "> "
             | Just t => do coreLift $ putStrLn "Running Auto Search: "
                            runAuto t
                            repl
-          let Nothing = isTestOne inp 
-            | Just t => do coreLift $ putStrLn "Running One Test: "
-                           runTestOne t
-                           repl
           let False = isTest inp 
             | True => do coreLift $ putStrLn "Running tests: "
                          runTests
                          repl
+          let Nothing = isTestOne inp 
+            | Just t => do coreLift $ putStrLn "Running One Test: "
+                           runTestOne t
+                           repl
+
           let Right ttexp = runParser Nothing inp (expr "(input)" init)
               | Left err => do coreLift $ printLn err
                                repl
@@ -96,6 +99,7 @@ repl = do coreLift $ putStr "> "
           defs <- get Ctxt
           coreLift $ putStrLn $ "Type: " ++ show !(normalise defs [] !(getTerm ty))
           nf <- normalise defs [] tm
+          
           coreLift $ putStrLn $ "Evaluated: " ++ show nf
           -- coreLift $ putStrLn $ "resugared: " ++ resugar (unelab [] tm)
           repl

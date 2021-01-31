@@ -119,8 +119,10 @@ traverseDefs f = do traverse f (toList !(get Ctxt)) ; pure ()
 export
 defsLength : {auto c : Ref Ctxt Defs} -> Core Nat
 defsLength = pure $ length $ toList !(get Ctxt)
-                                
                                
-                              
+export 
+deleteName : {auto c : Ref Ctxt Defs} -> Name -> Core ()
+deleteName n = do defs <- get Ctxt
+                  put Ctxt (delete n defs)
                              
 

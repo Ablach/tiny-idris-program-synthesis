@@ -1,5 +1,5 @@
 v01 ! ys 
-v02 ! Cons a (add n m) x (append xs ys)
+v02 ! Cons a (add n m) x (append a n m xs ys)
 v03 ! Nil b
 v04 ! Cons b n (f x) (map a b n f xs)
 v05 ! Nil a

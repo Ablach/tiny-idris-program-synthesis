@@ -37,10 +37,11 @@ record UState where
   nextName : Int
   nextConstraint : Int
   functions : SortedMap Name (Term [])
+  types : SortedMap Name NameType
 
 export
 initUState : UState
-initUState = MkUState empty empty empty 0 0 empty
+initUState = MkUState empty empty empty 0 0 empty empty
 
 export
 data UST : Type where
@@ -181,3 +182,25 @@ addFunction : {auto u : Ref UST UState} ->
               Name -> Term [] -> Core ()
 addFunction n t = do ust <- get UST
                      put UST (record {functions $= insert n t} ust)
+
+export 
+addType : {auto u : Ref UST UState} -> 
+          Name -> NameType -> Core ()
+addType n nty = do ust <- get UST
+                   put UST (record {types $= insert n nty} ust)
+
+export 
+typeRefs : {vars : _} ->
+           {auto u : Ref UST UState} -> 
+           Core (List (Term vars))
+typeRefs = pure $ map (\ (n,nty) => (Ref nty n)) (Data.SortedMap.toList $ types !(get UST))
+
+export 
+deleteMetas : {auto c : Ref Ctxt Defs} ->
+              {auto u : Ref UST UState} ->
+              List (Term vars , Name) -> Core ()
+deleteMetas [] = pure ()
+deleteMetas ((tm , x) :: xs) = do removeHole x
+                                  deleteName x
+                                  deleteMetas xs
+                           

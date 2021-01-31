@@ -2,6 +2,10 @@ data Nat : Type where
   Z : Nat
   S : Nat -> Nat
 
+data Bool : Type where
+ T : Bool
+ F : Bool
+
 add : Nat -> Nat -> Nat
 pat n =>
   add Z n = n
@@ -11,6 +15,9 @@ pat m : Nat, n : Nat =>
 data Vec : Nat -> Type -> Type where
   Nil : (a : Type) -> Vec Z a
   Cons : (a : Type) -> (n : Nat) -> a -> Vec n a -> Vec (S n) a
+
+tst : Vec (S Z) Nat
+tst = ?test
 
 append : (a : _) -> (n : _) -> (m : _) -> 
 	 Vec n a -> Vec m a -> Vec (add n m) a

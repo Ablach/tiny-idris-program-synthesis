@@ -12,14 +12,14 @@ pat n =>
 pat m : Nat, n : Nat =>
   add (S m) n = S (add m n)
 
-cheese : Nat -> Nat
 
 data Vec : Nat -> Type -> Type where
   Nil : (a : Type) -> Vec Z a
   Cons : (a : Type) -> (n : Nat) -> a -> Vec n a -> Vec (S n) a
 
-tst : Vec (S Z) Nat
-tst = ?test
+c : (a : Type) -> (n : Nat) -> (m : Nat) -> 
+    (xs : Vec n a) -> (ys : Vec m a) -> Vec (add n m) a
+
 
 append : (a : _) -> (n : _) -> (m : _) -> 
 	 Vec n a -> Vec m a -> Vec (add n m) a

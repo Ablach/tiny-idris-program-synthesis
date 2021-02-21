@@ -63,7 +63,8 @@ modules = -- Core TT representations
 	  Synthesis.Unelab,
 	  Synthesis.Resugar, 
 	  Synthesis.Rescope,
-	  Synthesis.Test
+	  Synthesis.Test,
+	  Synthesis.Util
 
 options = "-p contrib"
 

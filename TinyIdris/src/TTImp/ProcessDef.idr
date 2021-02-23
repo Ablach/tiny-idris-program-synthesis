@@ -15,8 +15,6 @@ import TTImp.TTImp
 import Data.Strings
 
 
-
-
 getRHSEnv : {vars : _} ->
             Env Term vars -> Term vars -> Term vars ->
             Core (vars' ** (Env Term vars', Term vars', Term vars'))
@@ -42,6 +40,9 @@ processClause (PatClause lhs rhs)
              getRHSEnv [] lhstm !(getTerm lhsty)
          -- Check the RHS in that context
          (rhstm, rhsty) <- checkTerm env rhs (Just (gnf env rhsexp))
+         case rhs of 
+              (IHole x) => addUserhole x lhs
+              _ => pure ()
          pure (MkClause env lhsenv rhstm)
 
 export
@@ -53,7 +54,6 @@ processDef n clauses
          Just gdef <- lookupDef n defs
               | Nothing => throw (GenericMsg ("No type declaration for " ++ show n))
          chkcs <- traverse processClause clauses
-
          -- Now we have all the clauses, make a case tree
          (args ** tree) <- getPMDef n (type gdef) chkcs
     

@@ -20,4 +20,6 @@ processType : {auto c : Ref Ctxt Defs} ->
 processType n ty
     = do (tychk, _) <- checkTerm [] ty (Just gType)
          -- Exercise: We should also check whether it's already defined!
+         addFunction n tychk
          addDef n (newDef tychk None)
+         coreLift $ putStrLn $ "processed type " ++ (show n)

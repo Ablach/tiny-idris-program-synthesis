@@ -1,0 +1,28 @@
+data Nat : Type where
+  Z : Nat
+  S : Nat -> Nat
+
+data Bool : Type where
+ T : Bool
+ F : Bool
+
+add : Nat -> Nat -> Nat
+pat n =>
+  add Z n = n
+pat m : Nat, n : Nat =>
+  add (S m) n = S (add m n)
+
+
+data Vec : Nat -> Type -> Type where
+  Nil : (a : Type) -> Vec Z a
+  Cons : (a : Type) -> (n : Nat) -> a -> Vec n a -> Vec (S n) a
+
+append : (a : Type) -> (n : Nat) -> (m : Nat) -> 
+	 (xs : Vec n a) -> (ys : Vec m a) -> Vec (add n m) a
+
+map : (a : Type) -> (b : Type) -> (n : Nat) -> (f : (a -> b)) -> (xs : Vec n a) -> Vec n b
+
+replicate : (a : Type) -> (x : a) -> (n : Nat) -> Vec n a
+
+drop : (a : Type) -> (n : Nat) -> (m : Nat) -> (xs : Vec (add n m) a) -> Vec m a
+

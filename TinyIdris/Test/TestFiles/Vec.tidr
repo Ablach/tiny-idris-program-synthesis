@@ -17,30 +17,26 @@ data Vec : Nat -> Type -> Type where
   Nil : (a : Type) -> Vec Z a
   Cons : (a : Type) -> (n : Nat) -> a -> Vec n a -> Vec (S n) a
 
-c : (a : Type) -> (n : Nat) -> (m : Nat) -> 
-    (xs : Vec n a) -> (ys : Vec m a) -> Vec (add n m) a
-
-
-append : (a : _) -> (n : _) -> (m : _) -> 
+append : (a : Type) -> (n : Nat) -> (m : Nat) -> 
 	 Vec n a -> Vec m a -> Vec (add n m) a
 pat a : Type, m : Nat, ys : Vec m a =>
     append a Z m (Nil a) ys = ?v01
 pat a : Type, n : Nat, x : a, xs : Vec n a, m : Nat, ys : Vec m a =>
     append a (S n) m (Cons a n x xs) ys = ?v02
 
-map : (a : _) -> (b : _) -> (n : Nat) -> (a -> b) -> Vec n a -> Vec n b
+map : (a : Type) -> (b : Type) -> (n : Nat) -> (a -> b) -> Vec n a -> Vec n b
 pat a : Type, b : Type, f : (a -> b) =>
    map a b Z f (Nil a) = ?v03
 pat a : Type, b : Type, n : Nat, f : (a -> b), x : a, xs : Vec n a =>
    map a b (S n) f (Cons a n x xs) = ?v04
 
-replicate : (a : _) -> (x : a) -> (n : Nat) -> Vec n a
+replicate : (a : Type) -> (x : a) -> (n : Nat) -> Vec n a
 pat a : Type, x : a => 
    replicate a x Z = ?v05
 pat a : Type, x : a, n : Nat => 
    replicate a x (S n) = ?v06
 
-drop : (a : _) -> (n : _) -> (m : _) -> Vec (add n m) a -> Vec m a
+drop : (a : Type) -> (n : Nat) -> (m : Nat) -> Vec (add n m) a -> Vec m a
 pat a : Type, n : Nat, m : Nat, ys : Vec m a =>
   drop a Z m ys = ?v07
 pat a : Type, n : Nat, m : Nat, x : a, xs : Vec (add n m) a =>

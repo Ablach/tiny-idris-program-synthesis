@@ -5,6 +5,8 @@ import Core.Core
 import Core.Env
 import Core.TT
 
+import TTImp.TTImp
+
 import Data.List
 import Data.SortedMap
 import Data.SortedSet
@@ -37,11 +39,12 @@ record UState where
   nextName : Int
   nextConstraint : Int
   functions : SortedMap Name (Term [])
+  userholes : SortedMap Name RawImp
   types : SortedMap Name NameType
 
 export
 initUState : UState
-initUState = MkUState empty empty empty 0 0 empty empty
+initUState = MkUState empty empty empty 0 0 empty empty empty
 
 export
 data UST : Type where
@@ -176,6 +179,12 @@ newConstant {vars} env tm ty constrs
     envArgs = let args = reverse (mkConstantAppArgs {done = []} env []) in
                   rewrite sym (appendNilRightNeutral vars) in args
 
+
+export 
+addUserhole : {auto u : Ref UST UState} -> 
+              Name -> RawImp -> Core ()
+addUserhole n t = do ust <- get UST
+                     put UST (record {userholes $= insert n t} ust)
 
 export 
 addFunction : {auto u : Ref UST UState} -> 

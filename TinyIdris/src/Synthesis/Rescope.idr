@@ -17,7 +17,7 @@ weakenMore (x :: xs) p = Later (weakenMore xs p)
 weakenNS : (ns : List Name) -> Var top -> Var (ns ++ top)
 weakenNS [] p                = p
 weakenNS (x :: xs) (MkVar p) = MkVar (Later $ weakenMore xs p)
-
+{-
 export
 getUsableEnv : {vars : _} -> 
                (ns : List Name) ->
@@ -35,6 +35,24 @@ getUsableEnv {vars = v :: vars} ns ((PVar x z) :: env)
   if givenName v 
      then Local _ var :: rewrite appendAssociative ns [v] vars in rest
      else rewrite appendAssociative ns [v] vars in rest
+getUsableEnv {vars = v :: vars} ns (_ :: env) 
+  = rewrite appendAssociative ns [v] vars in getUsableEnv (ns ++ [v]) env
+getUsableEnv _ [] = []
+-}
+
+export
+getUsableEnv : {vars : _} -> 
+               (ns : List Name) ->
+               Env Term vars ->
+               List (Term (ns ++ vars))
+getUsableEnv {vars = v :: vars} ns ((Lam n z w) :: env) 
+= let rest = getUsableEnv {vars = vars} (ns ++ [v]) env 
+      MkVar var = weakenNS ns (MkVar First) in
+  Local _ var :: rewrite appendAssociative ns [v] vars in rest
+getUsableEnv {vars = v :: vars} ns ((PVar x z) :: env) 
+= let rest = getUsableEnv {vars = vars} (ns ++ [v]) env 
+      MkVar var = weakenNS ns (MkVar First) in 
+  Local _ var :: rewrite appendAssociative ns [v] vars in rest
 getUsableEnv {vars = v :: vars} ns (_ :: env) 
   = rewrite appendAssociative ns [v] vars in getUsableEnv (ns ++ [v]) env
 getUsableEnv _ [] = []

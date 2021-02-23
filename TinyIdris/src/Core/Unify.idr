@@ -370,6 +370,32 @@ mutual
             cs' <- unify env' (refsToLocals (Add x xn None) tmx)
                               (refsToLocals (Add x xn None) tmy)
             pure $ union ct cs'
+    unify env (NBind x (PVar n z) sc) (NBind x' (PVar n' v) sc') 
+        = do defs <- get Ctxt
+             empty <- clearDefs defs
+             z' <- quote empty env z
+             cs <- unify env z v
+             zn <- genName "x"
+             let env' : Env Term (x :: _)
+                      = (PVar n' z') :: env
+             case constraints cs of
+                  [] => 
+                    do sca <- sc defs (toClosure env (Ref Bound zn))
+                       scb <- sc' defs (toClosure env (Ref Bound zn))
+                       tma <- quote empty env sca
+                       tmb <- quote empty env scb
+                       unify env' (refsToLocals (Add x zn None) tma) (refsToLocals ( Add x zn None) tmb) 
+                  (c :: xs) => 
+                    do tt <- quote empty env z
+                       uu <- quote empty env v
+                       dd <- newConstant env (Bind x (Lam n' Explicit tt) (Local _ First)) 
+                                             (Bind x (PVar n' tt) (weaken uu)) (c :: xs)
+                       sca <- sc defs (toClosure env (Ref Bound zn))
+                       scb <- sc' defs (toClosure env (Ref Bound zn))
+                       tma <- quote empty env sca
+                       tmb <- quote empty env scb 
+                       cs' <- unify env' (refsToLocals (Add x zn None) tma) (refsToLocals ( Add x zn None) tmb) 
+                       pure (union cs cs')
     unify env a@(NBind x y z) b@(NBind u v w) = convertError env a b 
     -- Matching constructors, reduces the problem to unifying the arguments
     unify env nx@(NDCon n t a args) ny@(NDCon n' t' a' args')

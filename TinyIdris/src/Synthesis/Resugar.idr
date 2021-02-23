@@ -95,7 +95,7 @@ resugarArgs ((DefaultCase x) :: xs) = "defcase"
 
 resugarCT : {args : _} -> {auto c : Ref Ctxt Defs} -> CaseTree args -> String
 resugarCT (Case idx p scTy xs) 
-  = "case " ++ (resugar $ unelab scTy) ++ " of \n" ++ "  " ++ (resugarArgs xs)
+  = ?dsa "case " ++ (resugar $ unelab scTy) ++ " of \n" ++ "  " ++ (resugarArgs xs)
 resugarCT (STerm x) = (show x)
 resugarCT (Unmatched msg) = "unmached"
 resugarCT Impossible = "impossible case"
@@ -109,3 +109,14 @@ resugarDef (TCon tag arity datacons) = "typeCon"
 resugarDef Hole = "hole"
 resugarDef (MetaVar vars x retTy) = "meta"
 resugarDef (Guess guess constraints) = "guess"
+
+
+resugarClauses : {auto c : Ref Ctxt Defs} -> List (Clause, RawImp, RawImp) -> String
+resugarClauses [] = ""
+resugarClauses ((_, (l, r)) :: xs) 
+  = (resugar l) ++ " = " ++ (resugar r) ++ "\n" ++ resugarClauses xs
+
+export
+resugarType : {auto c : Ref Ctxt Defs} -> List (Clause, RawImp, RawImp) -> Name -> RawImp -> String
+resugarType cs (UN n) ty = n ++ " : " ++ (resugar ty) ++ "\n" ++ resugarClauses cs
+resugarType xs n ty = ?asdf

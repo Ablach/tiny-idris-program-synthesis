@@ -129,7 +129,7 @@ tryIfSuccessful : {vars :_} ->
 tryIfSuccessful s@(MkSearch (S depth) name env lhs target) n nty (NBind m (Pi nm pinfo tm) sc)
   = do defs <- get Ctxt
        (tm' :: ts) <- synthesise (MkSearch (pred depth) m env lhs !(quote defs env tm))
-        | _ => none 
+        | _ => none
        results <- traverse help (tm' :: ts)
        pure $ concat results
   where help : Term vars ->
@@ -151,47 +151,48 @@ tryIfSuccessful (MkSearch depth name env lhs target) n nty tm
   = do defs <- get Ctxt
        --log $ "trying " ++ (show target) ++ " and " ++ (show !(quote defs env tm))
        Just (MkUnifyResult [] holesSolved) <- tryUnify env target !(quote defs env tm)
-        | _ => none 
+        | _ => none  
  --      if holesSolved then log $ "holes solved" else log "no holes solved"
        --showCons constraints
        pure [Ref nty n]
 
-structuralRecursionCheck : {vars : _} -> {vars' :_} ->
+structuralRecursionCheck : {vars :_} ->
                            {auto c : Ref Ctxt Defs} ->
                            {auto u : Ref UST UState} ->
-                           Term vars -> Term vars' ->
+                           RawImp -> Term vars ->
                            Core Bool
-structuralRecursionCheck (Bind x y scope) (Bind x' y' scope') 
-  = structuralRecursionCheck scope scope'
-structuralRecursionCheck tm tm'
-  = do log $ "running on " ++ (show tm) ++ " and " ++ (show tm')
-       let (f, as) = getFnArgs tm
-           (f', as') = getFnArgs tm'
-       pure $ feq f f' && !(aeq as as')
-  where
-    feq : Term vars -> Term vars' -> Bool
-    feq (Ref x y) (Ref z w) = not (w == y)
-    feq _ _ = True
-    
-    aeq : List (Term vars) -> List (Term vars') -> Core Bool
-    aeq (x :: xs) (y :: ys) = if !(structuralRecursionCheck x y) 
-                                 then pure True 
-                                 else aeq xs ys
-    aeq [] [] = pure False
-    aeq _ _ = pure True
+structuralRecursionCheck  lhs rhs
+ = do let tm = getScope lhs
+          (fn, args) = getArgs tm
+          tm' = unelab rhs
+          (fn' , args') = getArgs tm' 
+      -- return true if they are different
+      pure $ (checkRI fn fn') || (checkArgs args (reverse args'))
+ where getScope : RawImp -> RawImp
+       getScope (IPatvar x ty scope) = getScope scope
+       getScope tm = tm
 
+       getArgs : RawImp -> (RawImp , List RawImp)
+       getArgs (IApp f a) = let (f', as) = getArgs f in (f' , a :: as)
+       getArgs lhs = (lhs, [])
 
-sr : {vars: _} -> {auto c : Ref Ctxt Defs} ->  RawImp -> Term vars -> Core Bool 
-sr lhs tm = sr' lhs (unelab tm)
-  where sr' : RawImp -> RawImp -> Core Bool 
-        sr' (IPatvar a b x) tm = sr' x tm
-        sr' (IApp f x) (IApp f' y) 
-          = do log $ "here with " ++ (resugar (IApp f x)) ++ " and " ++ (resugar (IApp f' y))
-               if !(sr' x y) then pure True else sr' f f'
-        sr' (IVar x) (IVar y) 
-        = do log $ (show x) ++ " and " ++ (show y) ++ " returning " ++ (show (not (x ==y)))
-             pure $ not (x == y)
-        sr' _ _ = pure True
+       checkRI : RawImp -> RawImp -> Bool
+       checkRI (IVar x) (IVar y) = not (x == y) 
+       checkRI (IPi x y argTy retTy) (IPi x' y' argTy' retTy') = checkRI argTy argTy' || checkRI retTy retTy' 
+       checkRI (ILam x y argTy scope) (ILam x' y' argTy' scope') = checkRI argTy argTy' || checkRI scope scope'
+       checkRI (IPatvar x ty scope) (IPatvar x' ty' scope') =  checkRI ty ty' || checkRI scope scope'
+       checkRI (IApp x y) (IApp x' y') = checkRI x x' || checkRI y y'
+       checkRI (IHole x) (IHole y) = not (x == y)
+       checkRI Implicit Implicit = False
+       checkRI IType IType = False
+       checkRI _ _ = True
+
+       checkArgs : List RawImp -> List RawImp -> Bool
+       checkArgs (l :: ls) (r :: rs) = checkRI l r || checkArgs ls rs
+       -- we have reached the end and none have been different
+       checkArgs [] [] = False
+       -- shouldn't really happen, but different arg len is different
+       checkArgs _ _ = True 
 
 tryDef : {vars : _} ->
          {auto c : Ref Ctxt Defs} -> 
@@ -206,25 +207,8 @@ tryDef s@(MkSearch depth name env lhs target) n nty tm
       qtm <- quote defs env ntm
       Just cs <- tryUnify env target qtm
         | _ => none
-      (can :: candidates) <- tryIfSuccessful s n nty norm | _ => none
-      if n == (UN "Cons")
-       then do log $ show can
-               log $ resugar $ unelab can
-               log $ resugar lhs 
-               log $ resugar (ge lhs)
-       else pure ()
-      if n == name 
-       then do log $ show can
-               log $ resugar $ unelab can
-               log $ resugar lhs 
-               log $ resugar (ge lhs)
-               filterM (sr lhs) candidates
-       else pure (can :: candidates)
-  where ge : RawImp -> RawImp
-        ge (IPatvar x ty scope) = ge scope 
-        ge tm = tm 
-
-
+      tryIfSuccessful s n nty norm
+      
 tryLocals : {vars : _} -> 
             {auto c : Ref Ctxt Defs} -> 
             {auto u : Ref UST UState} ->
@@ -275,9 +259,10 @@ synthesiseWorlds : {auto c : Ref Ctxt Defs} ->
 synthesiseWorlds n [] = pure $ Just []
 synthesiseWorlds n ((vars ** (env, tm, ri)) :: xs)
  = do let s = (MkSearch 4 n env ri tm)
-      (t :: ts) <- synthesise s | _ => nothing 
+      (t :: ts) <- synthesise s | _ => nothing  
+      (t' :: ts') <- filterM (structuralRecursionCheck ri) (t :: ts) | _ => nothing
       Just rest <- synthesiseWorlds n xs | _ => nothing
-      clause <- getClause (s, t, ri)
+      clause <- getClause (s, t', ri)
       pure $ Just (clause :: rest)
 
 showclauses : {auto c : Ref Ctxt Defs} -> 
@@ -377,6 +362,7 @@ begin def n lhs =
                   !(traverse (\(tm , gty, ri) => pure $ getSearchData !(getTerm gty) [] ri) gs)
       | _ => begin def n cs'
      pure $ Just res
+
 
 public export
 run : {auto c : Ref Ctxt Defs} -> 

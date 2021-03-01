@@ -21,7 +21,7 @@ import Data.SortedMap
 
 import Synthesis.Util
 import Synthesis.Resugar
-
+import Synthesis.Unelab
 
 merge : List ((a, ns) , a -> b) -> List (b, ns)
 merge = map (\ ((fs, ns), sn) => (sn fs, ns)) 
@@ -121,6 +121,31 @@ validCon val n env tyn tytag tyar tyargs (datan, datatm, datatag, dataar)
           Nothing => pure False
           Just _ => pure True
 
+getI : Term vars -> Maybe Nat
+getI (Local idx p) = Just idx
+getI _ = Nothing
+
+getIdx : {vars : _} -> Term vars -> List Nat
+getIdx (Bind x y scope) = getIdx scope
+getIdx tm = let (fn, as) = getFnArgs tm in filterJust $ map getI as
+
+getArgs : {vars : _} -> 
+          {auto c : Ref Ctxt Defs} ->
+          {auto u : Ref UST UState} ->
+          Nat -> Term vars -> Env Term vars ->
+          Core (List (Either Nat (RawImp -> RawImp)))
+getArgs n (Bind x y scope) env 
+ = case elem n (getIdx scope) of
+    True => pure (Left n :: !(getArgs (S n) scope (y :: env)))
+    False => 
+     pure ((Right $ (IPatvar x (unelab (binderType y)))) :: !(getArgs (S n) scope (y :: env)))
+getArgs n _ env = pure []
+
+showEi : List (Either Nat (RawImp -> RawImp)) -> Core ()
+showEi [] = pure ()
+showEi ((Left x) :: xs) = do log $ show x ; showEi xs
+showEi ((Right x) :: xs) = do log $ resugar $ x (IHole (UN "bum")) ; showEi xs
+
 getSplit : {vars : _} -> 
            {auto c : Ref Ctxt Defs} ->
            {auto u : Ref UST UState} ->
@@ -136,12 +161,32 @@ getSplit val@(NBind x b sc) n env =
              datacons <- traverse getData datas
              [valid] <- filterM (validCon val n env y tag arity xs) datacons             
               | _ => nothing 
+             let (a,b,d,e) = valid
+             log $ show b
+             res <- getArgs 0 b []
+             showEi res
              pure $ Just valid
      else do defs <- get Ctxt 
              getSplit !(sc defs (toClosure env !(quote defs env (binderType b)))) n env
 getSplit tm n env = nothing
 
+splitOnN : RawImp -> Name -> (Maybe (RawImp -> RawImp), RawImp)
+splitOnN (IPatvar x ty scope) n 
+  = if x == n 
+       then (Nothing, scope)
+       else case splitOnN scope n of 
+                 (Nothing, z) => (Just (IPatvar x ty), z)
+                 ((Just y), z) => (Just (\ sc' => IPatvar x ty (y sc')), z)
+splitOnN tm n = (Nothing, tm)
 
+tpv : {vars : _} ->
+      {auto c : Ref Ctxt Defs} -> 
+      {auto u : Ref UST UState} ->
+      Term vars -> Nat -> Nat -> RawImp -> Core RawImp
+tpv (Bind x y scope) n_in splits ri
+  = do nm <- genName $ "x" ++ (show splits) ++ "_" ++ (show n_in)
+       pure $ IPatvar nm (unelab $ binderType y) !(tpv scope (S n_in) splits ri)
+tpv tm n_in splits ri = pure ri
 
 export
 splitSingles : {auto c : Ref Ctxt Defs} -> 
@@ -150,9 +195,7 @@ splitSingles : {auto c : Ref Ctxt Defs} ->
                Core (List RawImp)
 splitSingles splits (tm,[]) = pure [tm]
 splitSingles splits (tm,(n :: ns)) 
-  = do upd <- splitSingle tm n
-       log $ "from split single "
-       traverse (log . resugar . fst) upd
+  = do upd <- splitSingle tm n 
        [(_,_,updated, newnames)] <- filterCheckable upd | _ => splitSingles splits (tm, ns)
        splitSingles (S splits) (updated, ns ++ newnames)
   where  
@@ -161,13 +204,14 @@ splitSingles splits (tm,(n :: ns))
           = do defs <- get Ctxt
                (tm , gd) <- checkTerm [] (IPatvar x ty scope) Nothing
                norm <- nf defs [] tm
-               Just (dcn, tctm, tag, arity) <- getSplit norm n [] | _ => none
+               Just (dcn, dctm, tag, arity) <- getSplit norm n [] | _ => none
+               let (Just pre, suf) = splitOnN (IPatvar x ty scope) n | _ => none
                ns <- genNames arity splits
                let ns' = map IVar ns
                    rawdata = apply (IVar dcn) ns' 
-                   rest = toPatVar ns
-                   fixed = fixUpScope n scope rawdata 
-               pure $ merge [(fixed, rest)]
+                   rest = tpv dctm 0 splits 
+                   (newsc, names) = fixUpScope n suf rawdata 
+               pure [(pre $ !(rest $ newsc), names)]
         splitSingle _ _ = none
 
 

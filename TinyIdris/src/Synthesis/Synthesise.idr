@@ -137,7 +137,7 @@ structuralRecursionCheck  lhs rhs
        checkRI (IHole x) (IHole y) = not (x == y)
        checkRI Implicit Implicit = False
        checkRI IType IType = False
-       checkRI _ _ = True
+       checkRI _ _ = True 
 
        checkArgs : List RawImp -> List RawImp -> Bool
        checkArgs (l :: ls) (r :: rs) = checkRI l r || checkArgs ls rs
@@ -187,7 +187,7 @@ synthesise s@(MkSearch 0 name env lhs tm)
 synthesise s@(MkSearch (S k) name env lhs tm)
  = do defs <- get Ctxt
       ust <- get UST
-      locals <- tryLocals s (getUsableEnv [] env)
+      locals <- tryLocals s (getUsableEnv [] env)  
       cons <- case getFnArgs tm of 
                 ((Ref nty@(TyCon tag arity) n), as)
                    => do Just def <- lookupDef n defs
@@ -244,6 +244,9 @@ begin def n lhs splits =
   do cs@(c :: cases) <- traverse (splitLhs False splits) lhs | _ => pure Nothing
      gs@(p :: ps) <- filterCheckable (concat cs) | _ => pure Nothing
      let gs' = concat !(traverse (splitSingles (S splits)) (map (\ (_,_,a) => a) gs)) 
+     log "ss results: "
+     traverse (log . resugar) gs'
+     log "+++++++++++++++++++++++++!"
      gs''@(p' :: ps') <- filterCheckable (map (\ g => (g,())) gs') | _ => nothing
      Just res <- synthesisePM n (type def)
                   !(traverse (\ (_,gd,ri,_) => pure $ getSearchData !(getTerm gd) [] ri) gs'')
@@ -261,7 +264,8 @@ run n = do Just def <- lookupDef n !(get Ctxt)
            case definition def of
                None =>
                   case !(begin def n [getLhs (type def) n []] 0) of
-                    Just (res, clauses) => pure $ resugarType clauses n $ unelab (type def)
+                    Just (res, clauses) => do log "result------------------------------------"
+                                              pure $ resugarType clauses n $ unelab (type def)
                     Nothing  => pure "No match"
                (MetaVar vars env retTy) => 
                 do let Just lhs = lookup n (userholes ust) | _ => pure "Missing hole"

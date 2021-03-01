@@ -25,6 +25,12 @@ export
 none : Core (List a)
 none = pure []
 
+export 
+filterJust : List (Maybe a) -> List a
+filterJust [] = []
+filterJust (Nothing :: xs) = filterJust xs
+filterJust ((Just x) :: xs) = x :: filterJust xs
+
 data UFail : Type where
 data EFail : Type where
 export

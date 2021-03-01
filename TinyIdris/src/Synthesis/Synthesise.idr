@@ -18,6 +18,7 @@ import Synthesis.Rescope
 import Synthesis.Unelab
 import Synthesis.Resugar
 import Synthesis.Util
+import Synthesis.CaseSplit
 
 import Data.List
 import Data.Nat
@@ -39,55 +40,6 @@ synthesise : {vars : _} ->
              {auto u : Ref UST UState} ->
              Search vars -> Core (List (Term vars))
 
-
-data UFail : Type where
-data EFail : Type where
-export
-tryUnify : {vars : _} ->
-           {auto c : Ref Ctxt Defs} -> 
-           {auto u : Ref UST UState} ->
-           Env Term vars ->
-           Term vars -> Term vars -> 
-           Core (Maybe (UnifyResult))
-tryUnify env a b
-  = do 
-       newRef UFail False 
-       ures <- catch (unify env a b) 
-                     (\_ => do put UFail True 
-                               pure $ MkUnifyResult [] False)
-       if !(get UFail) 
-          then nothing 
-          else pure $ Just (ures)
-
-
-filterCheckable : {auto c : Ref Ctxt Defs} -> 
-                  {auto u : Ref UST UState} ->
-                  List RawImp -> Core (List (Term [], Glued [], RawImp))
-filterCheckable [] = pure []
-filterCheckable (x :: xs) =
-  do newRef EFail False
-     (tm, gd) <- catch (checkTerm [] x Nothing) 
-                       (\ _ => do put EFail True
-                                  pure (Erased, MkGlue (pure Erased)
-                                                       (\_ => pure NErased)))
-     if !(get EFail)
-        then filterCheckable xs
-        else pure ((tm, gd, x) :: !(filterCheckable xs))
-
-
-
-fillMetas : {vars : _} -> 
-            {auto c : Ref Ctxt Defs} ->
-            {auto u : Ref UST UState} ->
-            Env Term vars -> NF vars ->
-            Core (NF vars , List (Term vars, Name))
-fillMetas env (NBind n (Pi n' pinfo tm) scope) 
-  = do defs <- get Ctxt 
-       nm <- genName "filling"
-       mta <- newMeta env nm !(quote defs env tm) Hole
-       (f , args) <- fillMetas env !(scope defs (toClosure env mta))
-       pure (f , (mta , nm) :: args)
-fillMetas env tm = pure (tm , [])
 
 
 getSearchData : {ns : _} -> 
@@ -265,13 +217,6 @@ synthesiseWorlds n ((vars ** (env, tm, ri)) :: xs)
       clause <- getClause (s, t', ri)
       pure $ Just (clause :: rest)
 
-showclauses : {auto c : Ref Ctxt Defs} -> 
-              {auto u : Ref UST UState} -> 
-              List Clause -> Core () 
-showclauses [] = pure ()
-showclauses ((MkClause env lhs rhs) :: xs) 
- = do log $ "lhs " ++ (resugar $ unelab lhs) ++ " rhs " ++ (resugar $ unelab rhs)
-      showclauses xs
 
 synthesisePM : {auto c : Ref Ctxt Defs} -> 
                {auto u : Ref UST UState} ->
@@ -280,67 +225,9 @@ synthesisePM : {auto c : Ref Ctxt Defs} ->
                Core (Maybe (Def, List (Clause, RawImp, RawImp)))
 synthesisePM n ty ss
   = do Just clauses <- synthesiseWorlds n ss | _ => nothing
---       showclauses clauses
        (as ** ct) <- getPMDef n ty $ map (\ (a,_,_) => a) clauses
        pure $ Just (PMDef as ct, clauses)
 
-
-splitLhs : {auto c : Ref Ctxt Defs} -> 
-           {auto u : Ref UST UState} ->
-           RawImp -> Core (List RawImp)
-splitLhs (IPatvar x ty scope) 
-  = do defs <- get Ctxt
-       let (IVar n) = getFn ty | _ => cont
-       Just def <- lookupDef n defs | _ => cont
-       let (TCon tag arity datas) = definition def | _ => cont
-       pats <- traverse getConPatterns datas
-       let finals = map (\ (fs, sn) => ((fixUpScope x scope fs) , sn)) pats
-       pure $ merge finals
-       -- for each data constructor,  remove the pattern for n, and add patterns for their 
-       -- args, then a : _ ect, then apply f (constructor a..an) args...
-   where 
-         merge : List (a , a -> b) -> List b
-         merge = map (\ (fs, sn) => sn fs) 
-
-         fixUpScope : Name ->
-                      (scope : RawImp) ->
-                      (replacement : RawImp) ->
-                      RawImp
-         fixUpScope n (IVar x) rep 
-          = if x == n then rep else (IVar x)
-         fixUpScope n (IApp f tm) rep 
-          = IApp (fixUpScope n f rep) (fixUpScope n tm rep)
-         fixUpScope n (IPi y z argTy retTy) rep 
-          = IPi y z (fixUpScope n argTy rep) (fixUpScope n retTy rep)
-         fixUpScope n (ILam y z argTy w) rep 
-          = ILam y z (fixUpScope n argTy rep) (fixUpScope n w rep)
-         fixUpScope n (IPatvar y z w) rep 
-          = IPatvar y (fixUpScope n z rep) (fixUpScope n w rep) 
-         fixUpScope n tm rep = tm
-
-         genNames : Nat -> Core (List Name)
-         genNames Z = none
-         genNames (S k) = do nm <- genName $ "x" ++ (show (S k))
-                             ns <- genNames k
-                             pure (nm :: ns)
-
-         toPatVar : List Name -> RawImp -> RawImp
-         toPatVar [] ri = ri
-         toPatVar (n :: ns) ri = IPatvar n Implicit (toPatVar ns ri)
-
-         getConPatterns : Name -> Core (RawImp, (RawImp -> RawImp))
-         getConPatterns n
-            = do defs <- get Ctxt
-                 Just def <- lookupDef n defs | _ => ?sdf
-                 let (DCon t a) = definition def | _ => ?sdf1
-                 ns <- genNames a
-                 let ns' = map IVar ns
-                 pure $ (apply (IVar n) ns' , toPatVar ns)
-
-         cont : Core (List RawImp) 
-         cont = do (r :: rs) <- splitLhs scope | _ => none
-                   pure $ map (IPatvar x ty) (r :: rs)
-splitLhs _ = none
 
 getLhs : {vars :_} -> {auto c : Ref Ctxt Defs} -> Term vars -> Name -> List RawImp -> RawImp 
 getLhs (Bind x (Pi m pinfo tm) scope) n ls 
@@ -349,18 +236,18 @@ getLhs (Bind x (Pi m pinfo tm) scope) n ls
          IPatvar x tm' sc
 getLhs tm n ls = apply (IVar n) (reverse ls)
 
-
 begin : {auto c : Ref Ctxt Defs} ->
         {auto u : Ref UST UState} -> 
-        GlobalDef -> Name -> List RawImp -> 
+        GlobalDef -> Name -> List RawImp -> Nat ->
         Core (Maybe (Def, List (Clause, RawImp, RawImp)))
-begin def n lhs = 
-  do cs@(c :: cases) <- traverse splitLhs lhs | _ => pure Nothing
-     let cs' = concat cs
-     gs@(p :: ps) <- filterCheckable cs' | _ => pure Nothing
+begin def n lhs splits = 
+  do cs@(c :: cases) <- traverse (splitLhs False splits) lhs | _ => pure Nothing
+     gs@(p :: ps) <- filterCheckable (concat cs) | _ => pure Nothing
+     let gs' = concat !(traverse (splitSingles (S splits)) (map (\ (_,_,a) => a) gs)) 
+     gs''@(p' :: ps') <- filterCheckable (map (\ g => (g,())) gs') | _ => nothing
      Just res <- synthesisePM n (type def)
-                  !(traverse (\(tm , gty, ri) => pure $ getSearchData !(getTerm gty) [] ri) gs)
-      | _ => begin def n cs'
+                  !(traverse (\ (_,gd,ri,_) => pure $ getSearchData !(getTerm gd) [] ri) gs'')
+      | _ => begin def n (map (\ (_,_,ri,_) => ri) gs'') (S splits) 
      pure $ Just res
 
 
@@ -373,7 +260,7 @@ run n = do Just def <- lookupDef n !(get Ctxt)
            ust <- get UST
            case definition def of
                None =>
-                  case !(begin def n [getLhs (type def) n []]) of
+                  case !(begin def n [getLhs (type def) n []] 0) of
                     Just (res, clauses) => pure $ resugarType clauses n $ unelab (type def)
                     Nothing  => pure "No match"
                (MetaVar vars env retTy) => 

@@ -119,4 +119,4 @@ resugarClauses ((_, (l, r)) :: xs)
 export
 resugarType : {auto c : Ref Ctxt Defs} -> List (Clause, RawImp, RawImp) -> Name -> RawImp -> String
 resugarType cs (UN n) ty = n ++ " : " ++ (resugar ty) ++ "\n" ++ resugarClauses cs
-resugarType xs n ty = ?asdf
+resugarType cs (MN n m) ty = n ++ " : " ++ (resugar ty) ++ "\n" ++ resugarClauses cs

@@ -36,6 +36,9 @@ data Error : Type where
      GenericMsg : String -> Error
      FileErr : String -> FileError -> Error
 
+     NotInContext : Name -> Error
+     InvalidDefinition : Name -> Error
+
 export
 Show Error where
   show (CantConvert env x y)
@@ -55,6 +58,8 @@ Show Error where
       = "Constructor " ++ show c ++ " is not fully applied"
 
   show (FileErr fname err) = "File error (" ++ fname ++ "): " ++ show err
+  show (NotInContext n) = "Not in context: " ++ (show n)
+  show (InvalidDefinition n) = "Invalid definition for " ++ (show n)
 
 -- Core is a wrapper around IO that is specialised for efficiency.
 export

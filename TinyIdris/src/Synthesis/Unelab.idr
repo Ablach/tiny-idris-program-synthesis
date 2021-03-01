@@ -5,7 +5,7 @@ import Core.TT
 import Core.Context
 import Core.Env
 import Core.Core
-import Synthesis.Monad
+
 
 export
 unelab : {vars : _} -> {auto c : Ref Ctxt Defs} -> 

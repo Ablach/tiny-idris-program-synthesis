@@ -64,7 +64,8 @@ modules = -- Core TT representations
 	  Synthesis.Resugar, 
 	  Synthesis.Rescope,
 	  Synthesis.Test,
-	  Synthesis.Util
+	  Synthesis.Util,
+	  Synthesis.CaseSplit
 
 options = "-p contrib"
 

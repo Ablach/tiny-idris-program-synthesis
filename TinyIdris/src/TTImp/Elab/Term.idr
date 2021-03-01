@@ -147,7 +147,7 @@ checkTerm env Implicit (Just exp)
          pure (metaval, exp)
 checkTerm env IType exp = checkExp env TType gType exp
 
-checkTerm env (IHole s) Nothing = ?fdsfd
+checkTerm env (IHole s) Nothing = throw (GenericMsg "Attempting to elabourate hole without type.")
 checkTerm env (IHole s) (Just gexp) = 
   do 
      defs <- get Ctxt 

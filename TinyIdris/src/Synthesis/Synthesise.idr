@@ -244,10 +244,8 @@ begin def n lhs splits =
   do cs@(c :: cases) <- traverse (splitLhs False splits) lhs | _ => pure Nothing
      gs@(p :: ps) <- filterCheckable (concat cs) | _ => pure Nothing
      let gs' = concat !(traverse (splitSingles (S splits)) (map (\ (_,_,a) => a) gs)) 
-     log "ss results: "
-     traverse (log . resugar) gs'
-     log "+++++++++++++++++++++++++!"
      gs''@(p' :: ps') <- filterCheckable (map (\ g => (g,())) gs') | _ => nothing
+     traverse (\ (a,_,_,_) => log $ show a) gs''
      Just res <- synthesisePM n (type def)
                   !(traverse (\ (_,gd,ri,_) => pure $ getSearchData !(getTerm gd) [] ri) gs'')
       | _ => begin def n (map (\ (_,_,ri,_) => ri) gs'') (S splits) 
@@ -264,8 +262,7 @@ run n = do Just def <- lookupDef n !(get Ctxt)
            case definition def of
                None =>
                   case !(begin def n [getLhs (type def) n []] 0) of
-                    Just (res, clauses) => do log "result------------------------------------"
-                                              pure $ resugarType clauses n $ unelab (type def)
+                    Just (res, clauses) => pure $ resugarType clauses n $ unelab (type def)
                     Nothing  => pure "No match"
                (MetaVar vars env retTy) => 
                 do let Just lhs = lookup n (userholes ust) | _ => pure "Missing hole"

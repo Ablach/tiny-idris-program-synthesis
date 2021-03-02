@@ -15,18 +15,21 @@ showN : Name -> String
 showN (UN x) = x
 showN (MN x y) = x 
 
+getFnArgs : RawImp -> (RawImp , List (RawImp))
+getFnArgs (IApp z w) = let (f , args) = getFnArgs z in (f , (w :: args))
+getFnArgs fn = (fn , [])
+
+
 mutual
 
-resugarLHS : RawImp -> String
-resugarLHS (IApp x a)
+resugarLHS : Bool -> RawImp -> String
+resugarLHS False (IApp x a )
   = let (f , as) = getFnArgs (IApp x a) in 
-        (resugar' f) ++ " " ++ (concat $ intersperse " " (map resugar' (reverse as)))
-  where getFnArgs : RawImp -> (RawImp , List (RawImp))
-        getFnArgs (IApp z w) = let (f , args) = getFnArgs z in (f , (w :: args))
-        getFnArgs fn = (fn , [])
-
-
-resugarLHS tm = resugar' tm 
+        "(" ++ (resugarLHS False f) ++ " " ++ (concat $ intersperse " " (map (resugarLHS False) (reverse as))) ++ ")"
+resugarLHS True (IApp x a)
+  = let (f , as) = getFnArgs (IApp x a) in 
+        (resugarLHS False f) ++ " " ++ (concat $ intersperse " " (map (resugarLHS False) (reverse as)))
+resugarLHS b tm = resugar' tm 
 
 resugarPat : Name ->
              (pat : RawImp) ->
@@ -36,9 +39,9 @@ resugarPat : Name ->
 resugarPat x pat scope True 
   = "pat " ++ resugarPat x pat scope False
 resugarPat x pat (IPatvar y ty scope) False 
-  = (showN x) ++ " : " ++ resugarLHS pat ++ ", " ++ resugarPat y ty scope False
+  = (showN x) ++ " : " ++ resugarLHS True pat ++ ", " ++ resugarPat y ty scope False
 resugarPat x pat scope False
-  = (showN x) ++ " : " ++ resugarLHS pat ++ " =>\n   " ++ resugarLHS scope
+  = (showN x) ++ " : " ++ resugarLHS True pat ++ " =>\n   " ++ resugarLHS True scope
 
 resugarLam : (first : Bool) ->
              (Maybe Name) ->

@@ -12,6 +12,9 @@ import TTImp.TTImp
 
 import Data.Maybe
 
+
+
+
 checkExp : {vars : _} ->
            {auto c : Ref Ctxt Defs} ->
            {auto u : Ref UST UState} ->
@@ -26,16 +29,19 @@ checkExp env term got (Just exp)
      -- metavariables. If so, recheck any existing constraints.
      do defs <- get Ctxt
         ures <- unify env !(getNF got) !(getNF exp)
-
+--        log $ "exp: checking " ++ (show term) ++ " against " ++ (show !(getTerm exp))
+  --      log $ "got: " ++ (showN !(getNF got)) ++ " exp: " ++ (showN !(getNF exp))
         -- If there are constraints, return a guarded definition. Otherwise,
         -- we've won.
         case constraints ures of
              [] => do -- Success: if any holes were solved, rerun unification
                       -- for any existing constraints
+
                       when (holesSolved ures) $
                            solveConstraints
                       pure (term, exp)
-             cs => do cty <- getTerm exp
+             cs => do 
+                      cty <- getTerm exp
                       ctm <- newConstant env term cty cs
                       pure (ctm, got)
 
@@ -69,6 +75,7 @@ checkTerm env (IVar n) exp
                               DCon t a => DataCon t a
                               TCon t a ds => TyCon t a
                               _ => Func
+
                 checkExp env (Ref nt n) (gnf env (embed (type gdef))) exp
 checkTerm env (IPi p mn argTy retTy) exp
     = do let n = fromMaybe (MN "_" 0) mn
@@ -98,10 +105,12 @@ checkTerm env (ILam p mn argTy scope) (Just exp)
                                  (Just exp)
               _ => throw (GenericMsg "Lambda must have a function type")
 checkTerm env (IPatvar n ty scope) exp
-    = do (ty, gTyty) <- checkTerm env ty (Just gType)
+    = do 
+         (ty, gTyty) <- checkTerm env ty (Just gType)
          let env' : Env Term (n :: vars)
                   = PVar n ty :: env
          (scopetm, gscopety) <- checkTerm env' scope Nothing
+
          checkExp env (Bind n (PVar n ty) scopetm)
                       (gnf env (Bind n (PVTy ty) !(getTerm gscopety)))
                       exp
@@ -122,25 +131,13 @@ checkTerm env (IApp f a) exp
                        -- to evaluate the scope with 'atm'
                        sc' <- sc defs (toClosure env atm)
                        checkExp env (App ftm atm) (glueBack defs env sc') exp
-              t => do case t of
-                        (NBind x y g) => log (show x)
-                        (NApp (NLocal idx p) xs) => log $ "loc" ++ (show idx)
-                        (NApp (NRef x y) xs) => 
-                           log $ "ref" ++ (show x) ++ " " ++ (show y)
-                        (NApp (NMeta x ys) xs) =>
-                           log $ "Meta" ++ (show x)
-                        (NDCon x tag arity xs) =>
-                           log $ "data " ++ (show x)
-                        (NTCon x tag arity xs) =>
-                           log $ "typeC " ++ (show x)
-                        NType => log "NTY"
-                        NErased => log "erased"
-                      throw (GenericMsg $ "Not a function type")
+              t => throw (GenericMsg $ "Not a function type")
 checkTerm env Implicit Nothing
     = throw (GenericMsg "Unknown type for implicit")
 checkTerm env Implicit (Just exp)
     = do expty <- getTerm exp
          nm <- genName "_"
+     
          -- Create a metavariable, and hope that it gets solved via
          -- checkExp later
          metaval <- newMeta env nm expty Hole

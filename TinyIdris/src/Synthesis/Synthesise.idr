@@ -245,7 +245,6 @@ begin def n lhs splits =
      gs@(p :: ps) <- filterCheckable (concat cs) | _ => pure Nothing
      let gs' = concat !(traverse (splitSingles (S splits)) (map (\ (_,_,a) => a) gs)) 
      gs''@(p' :: ps') <- filterCheckable (map (\ g => (g,())) gs') | _ => nothing
-     traverse (\ (a,_,_,_) => log $ show a) gs''
      Just res <- synthesisePM n (type def)
                   !(traverse (\ (_,gd,ri,_) => pure $ getSearchData !(getTerm gd) [] ri) gs'')
       | _ => begin def n (map (\ (_,_,ri,_) => ri) gs'') (S splits) 

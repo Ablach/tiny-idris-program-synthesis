@@ -27,7 +27,8 @@ merge : List ((a, ns) , a -> b) -> List (b, ns)
 merge = map (\ ((fs, ns), sn) => (sn fs, ns)) 
 
 fus : Name -> RawImp -> RawImp -> (RawImp, Bool)
-fus n (IVar y) rep = if n == y then (rep, True) else (IVar y, False)
+fus n (IVar y) rep 
+ = if n == y then (rep, True) else (IVar y, False)
 fus n (IApp y z) rep = let (f, inf) = fus n y rep
                            (a, ina) = fus n z rep in
                        (IApp f a, inf || ina)
@@ -64,7 +65,8 @@ toPatVar (n :: ns) ri = IPatvar n Implicit (toPatVar ns ri)
 
 getConPatterns :  {auto c : Ref Ctxt Defs} -> 
                   {auto u : Ref UST UState} ->
-                  Nat -> Name -> Core (RawImp, (RawImp -> RawImp))
+                  Nat -> Name -> 
+                  Core (RawImp, (RawImp -> RawImp))
 getConPatterns splits n
    = do defs <- get Ctxt
         Just def <- lookupDef n defs | _ => throw (NotInContext n)
@@ -77,7 +79,8 @@ getConPatterns splits n
 export
 splitLhs : {auto c : Ref Ctxt Defs} -> 
            {auto u : Ref UST UState} ->
-           Bool -> Nat -> RawImp -> Core (List (RawImp, List Name))
+           Bool -> Nat -> RawImp ->
+           Core (List (RawImp, List Name))
 splitLhs in_split splits (IPatvar x ty scope)  
   = do defs <- get Ctxt
        let (IVar n) = getFn ty | _ => cont
@@ -85,24 +88,24 @@ splitLhs in_split splits (IPatvar x ty scope)
        let (TCon tag arity datas) = definition def | _ => cont
        pats <- traverse (getConPatterns splits) datas
        let finals = map (\ (fs, sn) => ((fixUpScope x scope fs) , sn)) pats
-       pure $ merge finals
-     
-       -- for each data constructor,  remove the pattern for n, and add patterns for their 
-       -- args, then a : _ ect, then apply f (constructor a..an) args...
+       pure $ merge finals  
    where 
-         cont : Core (List (RawImp, List Name)) 
-         cont = if in_split 
-                   then pure []
-                   else do (r :: rs) <- splitLhs in_split splits scope | _ => none
-                           pure $ map (\ (sc, ns) => ((IPatvar x ty sc), ns)) (r :: rs)
+       cont : Core (List (RawImp, List Name)) 
+       cont = if in_split 
+                then pure []
+                else do (r :: rs) <- splitLhs in_split splits scope | _ => none
+                        pure $ map (\ (sc, ns) => ((IPatvar x ty sc), ns)) (r :: rs)
 splitLhs _ _ _ = none
 
 
-getData : {auto c : Ref Ctxt Defs} -> Name -> Core (Name, Term [], Int, Nat)
-getData n = do defs <- get Ctxt
-               Just def <- lookupDef n defs | _ => throw (NotInContext n)
-               let (DCon tag arity) = definition def | _ => throw (InvalidDefinition n)
-               pure (n, (type def), tag, arity)
+getData : {auto c : Ref Ctxt Defs} ->
+          Name ->
+          Core (Name, Term [], Int, Nat)
+getData n 
+ = do defs <- get Ctxt
+      Just def <- lookupDef n defs | _ => throw (NotInContext n)
+      let (DCon tag arity) = definition def | _ => throw (InvalidDefinition n)
+      pure (n, (type def), tag, arity)
 
 
 validCon : {vars : _} ->
@@ -113,107 +116,145 @@ validCon : {vars : _} ->
            (Name, Term [], Int, Nat) -> -- data constructor 
            Core Bool
 validCon val n env tyn tytag tyar tyargs (datan, datatm, datatag, dataar)
-  = do defs <- get Ctxt
-       (filled, metas) <- fillMetas env !(nf defs env (rewrite sym (appendNilRightNeutral vars) in weakenNs vars datatm)) 
-       res <- tryUnify env !(quote defs env filled) !(quote defs env (NTCon tyn tytag tyar tyargs))
-       deleteMetas metas
-       case res of
-          Nothing => pure False
-          Just _ => pure True
+ = do defs <- get Ctxt
+      (filled, metas) <- fillMetas env 
+       !(nf defs env (rewrite sym (appendNilRightNeutral vars) 
+                           in weakenNs vars datatm)) 
+      res <- tryUnify env 
+       !(quote defs env filled) !(quote defs env (NTCon tyn tytag tyar tyargs))
+      deleteMetas metas
+      case res of
+       Nothing => pure False
+       Just _ => pure True
 
 
-getLocals : {vars : _} -> List (Term vars) -> List (List (Nat, Name))
-getLocals (Local idx p :: xs) = [(idx, nameAt idx p)] :: getLocals xs
-getLocals (tm :: xs) = let (_, as) = getFnArgs tm in getLocals as ++ getLocals xs
-getLocals [] = []
-
-lookupTm : {vars : _} -> Name -> (Term (vars), RawImp) -> Maybe (RawImp)
-lookupTm n ((Local idx p), y) = if n == (nameAt idx p) then Just y else Nothing
-lookupTm n ((Ref Bound z), y) = if n == z then Just y else Nothing
-lookupTm n ((Meta x xs), y) = if n == x then Just y else Nothing
-lookupTm n ((Bind x z scope), y) = ?fdsf_5
-lookupTm n ((App x z), y) = lookupTm n (x,y) <|> lookupTm n (z,y)
+lookupTm : {vars : _} ->
+           {vars' : _} ->
+           Name ->
+           (Term (vars), Term vars') ->
+           Maybe (RawImp)
+lookupTm n ((Local idx p), (Local idx' p'))
+  = if n == (nameAt idx p) then Just (IVar $ nameAt idx' p') else Nothing
+lookupTm n ((App x z), (App x' z'))
+  = lookupTm n (x,x') <|> lookupTm n (z,z')
 lookupTm n _ = Nothing
 
-lookupLTm : {vars : _} -> Name -> List ((Term vars), RawImp) -> Maybe (RawImp)
+lookupLTm : {vars : _} ->
+            {vars' : _} ->
+            Name ->
+            List ((Term vars), (Term vars')) ->
+            Maybe (RawImp)
 lookupLTm n [] = Nothing
-lookupLTm n (((Local idx p), ri) :: xs) 
+lookupLTm n (((Local idx p), (Local idx' p')) :: xs) 
   = if n == (nameAt idx p)
-       then Just ri
+       then Just (IVar (nameAt idx' p'))
        else lookupLTm n xs
 lookupLTm n (tm :: xs) = lookupTm n tm <|> lookupLTm n xs
 
-lookupClos : {vars :_} -> {auto c : Ref Ctxt Defs} -> List (Closure vars, Closure vars) -> Name -> Maybe (RawImp, Closure vars)
+lookupClos : {vars :_} ->
+             {auto c : Ref Ctxt Defs} ->
+             List (Closure vars, Closure vars) ->
+             Name ->
+             Maybe (RawImp, Closure vars)
 lookupClos [] n = Nothing
-lookupClos (((MkClosure x z (Local idx p)), c@(MkClosure x' z' (Local idx' p'))) :: xs) n 
+lookupClos (((MkClosure x z (Local idx p)), c@(MkClosure x' z' (Local idx' p'))) :: xs) n
   = if n == (nameAt idx p)
      then Just (IVar (nameAt idx' p'), c)
      else lookupClos xs n
 lookupClos ((c@(MkClosure x z tm), (MkClosure x' z' tm')) :: xs) n 
-  = let (fn, as) = getFnArgs tm 
-        ri = unelab tm'
-        tms = zip as (repeat ri (length as)) in
-        case lookupLTm n tms of
+  = let (_, as) = getFnArgs tm 
+        (_, as') = getFnArgs tm'
+        as'' = zip as as'
+        in
+        case lookupLTm n as'' of
             Nothing => lookupClos xs n
-            (Just y) => Just (y,c)
+            (Just y) => Just (y, c)
            
+getSplitData : {vars : _} ->
+               {auto c : Ref Ctxt Defs} ->
+               {auto u : Ref UST UState} ->
+               NF vars -> Env Term vars -> List (Closure vars) -> NF vars ->
+               Core (List (Closure vars, Closure vars), NF vars)
+getSplitData (NBind x y f) env cs og 
+  = getSplitData !(f !(get Ctxt) 
+                  (toClosure env !(quote !(get Ctxt) env (binderType y))))
+                  env cs og
+getSplitData (NTCon x tag arity xs) env cs og 
+  = pure (zip xs cs, og)
+getSplitData tm env cs og = pure ([], og)
 
-
-prop : {vars : _} ->
-       {auto c : Ref Ctxt Defs} ->
-       {auto u : Ref UST UState} ->
-       NF vars -> Env Term vars -> List (Closure vars) -> NF vars ->
-       Core (List (Closure vars, Closure vars), NF vars)
-prop (NBind x y f) env cs og = prop !(f !(get Ctxt) (toClosure env !(quote !(get Ctxt) env (binderType y)))) env cs og
-prop (NTCon x tag arity xs) env cs og = pure (zip xs cs, og)
-prop tm env cs og = pure ([], og)
-
-preop : {vars :_} -> 
-        {auto c : Ref Ctxt Defs} -> 
-        {auto u : Ref UST UState} ->
-        Nat -> Nat -> Env Term vars -> List RawImp -> Name ->
-        (List (Closure vars, Closure vars), NF vars) ->
-        Core RawImp
-preop splits depth env rs dcn (cs, (NBind y z f)) =
+getRaw : {vars :_} -> 
+         {auto c : Ref Ctxt Defs} -> 
+         {auto u : Ref UST UState} ->
+         Nat -> Nat -> Env Term vars -> List RawImp -> Name ->
+         (List (Closure vars, Closure vars), NF vars) ->
+         Core RawImp
+getRaw splits depth env rs dcn (cs, (NBind y z f)) =
   do defs <- get Ctxt
      qtz <- quote defs env (binderType z)
      f' <- (f defs (toClosure env qtz))
      case lookupClos cs y of 
-         Nothing => do nm <- genName $ "ic" ++ (show splits) ++ (show depth) 
-                       pure $ IPatvar nm Implicit !(preop splits (S depth) env (IVar nm :: rs) dcn (cs, f'))
-         (Just (x, clo@(MkClosure _ _ tm))) 
-            => preop splits depth env (x :: rs) dcn (cs, !(f defs clo))
-preop splits depth env rs dcn (x, tm) = pure $ apply (IVar dcn) (reverse rs)
-
-getIdx : {vars : _} -> Term vars -> List (List (Nat, Name))
-getIdx (Bind x y scope) = getIdx scope
-getIdx tm = let (_, as) = getFnArgs tm in getLocals as
-
-lookupN : Name -> List (List (Nat, Name)) -> Maybe (Nat, Name)
-lookupN n [] = Nothing
-lookupN n (l :: ls)
- = case filter (\ (_,x) => x == n) l of
-      [] => lookupN n ls
-      (x :: xs) => Just x
-
-getArgs : {vars : _} -> 
-          {auto c : Ref Ctxt Defs} ->
-          {auto u : Ref UST UState} ->
-          Nat -> Term vars -> Env Term vars ->
-          Core (List (Either (Nat, Name) ((RawImp -> RawImp), Name)))
-getArgs n tm@(Bind x y scope) env 
- = case lookupN x (getIdx tm) of
-    Just nn => pure (Left nn :: !(getArgs (S n) scope (y :: env)))
-    Nothing => 
-     do nm <- genName $ "a" ++ (show n)
-        pure ((Right $ (IPatvar nm (unelab (binderType y)), nm)) :: !(getArgs (S n) scope (y :: env)))
-getArgs n _ env = pure []
+         Nothing => 
+          do nm <- genName $ "ic" ++ (show splits) ++ (show depth)  
+             pure $
+              IPatvar nm Implicit 
+                !(getRaw splits (S depth) env (IVar nm :: rs) dcn (cs, f'))
+         Just (x, clo@(MkClosure _ _ tm)) => getRaw splits depth env (x :: rs) dcn (cs, !(f defs clo))
+getRaw splits depth env rs dcn (x, tm)
+ = pure $ apply (IVar dcn) (reverse rs)
 
 
 splitPats : RawImp -> ((RawImp -> RawImp), RawImp)
-splitPats (IPatvar x ty scope) = let (pats, ret) = splitPats scope in ((\ z => IPatvar x ty (pats z)), ret)
+splitPats (IPatvar x ty scope)
+  = let (pats, ret) = splitPats scope in
+        ((\ z => IPatvar x ty (pats z)), ret)
 splitPats tm = (id, tm)
 
+replaceImplicitAt : {vars :_} -> 
+                    {auto c : Ref Ctxt Defs} -> 
+                    {auto u : Ref UST UState} ->
+                    Name -> Term vars -> RawImp -> RawImp
+replaceImplicitAt n tm (IPatvar x Implicit scope) 
+  = if n == x 
+       then IPatvar x (unelab tm) scope
+       else IPatvar x Implicit (replaceImplicitAt n tm scope)
+replaceImplicitAt n tm (IPatvar x y scope) = IPatvar x y (replaceImplicitAt n tm scope)
+replaceImplicitAt n tm ri = ri
+
+fillImplicits : {vars :_} ->
+                {auto c : Ref Ctxt Defs} -> 
+                {auto u : Ref UST UState} ->
+                RawImp -> Env Term vars -> RawImp -> 
+                Core RawImp 
+fillImplicits (IPatvar x Implicit scope) env ri
+  = do (tm, gd) <- checkTerm env Implicit (Just gType)
+       let env' : Env Term (x :: vars)
+                = (Lam x Explicit tm :: env)
+       fillImplicits scope env' ri
+       
+fillImplicits (IPatvar x ty scope) env ri
+ = do (tm, gd) <- checkTerm env ty Nothing
+      let env' : Env Term (x :: vars) 
+               = (Lam x Explicit tm) :: env
+      fillImplicits scope env' ri
+
+fillImplicits (IApp f a) env ri
+ = do (ftm, gfty) <- checkTerm env f Nothing
+      fty <- getNF gfty
+      defs <- get Ctxt
+      ri' <- fillImplicits f env ri
+      case fty of
+       (NBind x (Pi _ _ ty) sc) => 
+         do
+           (atm, gaty) <- checkTerm env a
+                           (Just (glueBack defs env ty))                    
+           case a of 
+            (IVar y) => pure $ replaceImplicitAt y !(getTerm gaty) ri'
+            (IApp y z) => fillImplicits (IApp y z) env ri'
+            _ => pure ri'
+       t => throw (GenericMsg "Not a function type")
+fillImplicits tm env ri = pure ri
+      
 getSplit : {vars : _} -> 
            {auto c : Ref Ctxt Defs} ->
            {auto u : Ref UST UState} ->
@@ -221,21 +262,26 @@ getSplit : {vars : _} ->
            Core (Maybe ((RawImp -> RawImp), RawImp))
 getSplit splits val@(NBind x b sc) n env =
   if x == n
-     then do defs <- get Ctxt
-             let tm = binderType b
-             let (NTCon y tag arity xs) = binderType b | _ => nothing
-             Just def <- lookupDef y defs | _ => throw (NotInContext n)
-             let (TCon tag' arity' datas) = definition def | _ => throw (InvalidDefinition y)
-             datacons <- traverse getData datas
-             [valid] <- filterM (validCon val n env y tag arity xs) datacons             
-              | _ => nothing 
-             let (a,b,d,e) = valid 
-             ntm <- nf defs env (rewrite sym (appendNilRightNeutral vars) in weakenNs vars b)
-             res <- prop ntm env xs ntm
-             ress <- preop splits 0 env [] a res
-             pure $ Just $ splitPats ress
+     then 
+      do defs <- get Ctxt
+         let tm = binderType b
+         let (NTCon y tag arity xs) = binderType b | _ => nothing
+         Just def <- lookupDef y defs | _ => throw (NotInContext n)
+         let (TCon tag' arity' datas) = definition def 
+          | _ => throw (InvalidDefinition y)
+         datacons <- traverse getData datas
+         [valid] <- filterM (validCon val n env y tag arity xs) datacons             
+          | _ => nothing 
+         let (name,term,_,_) = valid 
+         ntm <- nf defs env (rewrite sym (appendNilRightNeutral vars) 
+                                  in weakenNs vars term)
+         splitdata <- getSplitData ntm env xs ntm
+         raw <- getRaw splits 0 env [] name splitdata 
+         pure $ Just $ splitPats raw
      else do defs <- get Ctxt 
-             getSplit splits !(sc defs (toClosure env !(quote defs env (binderType b)))) n env
+             getSplit splits !(sc defs 
+                                  (toClosure env 
+                                    !(quote defs env (binderType b)))) n env
 getSplit splits tm n env = nothing
 
 splitOnN : RawImp -> Name -> (Maybe (RawImp -> RawImp), RawImp)
@@ -256,10 +302,15 @@ tpv (Bind x y scope) n_in splits ri
        pure $ IPatvar nm (unelab $ binderType y) !(tpv scope (S n_in) splits ri)
 tpv tm n_in splits ri = pure ri
 
-getNonPats : {vars : _} -> {auto c : Ref Ctxt Defs} -> List (Either (Nat, Name) ((RawImp -> RawImp), Name)) -> List (Closure vars) -> List RawImp
+getNonPats : {vars : _} ->
+             {auto c : Ref Ctxt Defs} ->
+             List (Either (Nat, Name) ((RawImp -> RawImp), Name)) ->
+             List (Closure vars) -> List RawImp
 getNonPats [] cs = []
-getNonPats ((Left (x, v)) :: xs) ((MkClosure y z w) :: ys) = (unelab w) :: getNonPats xs ys
-getNonPats ((Right (x,n)) :: xs) cs = (IVar n) :: getNonPats xs cs
+getNonPats ((Left (x, v)) :: xs) ((MkClosure y z w) :: ys)
+  = (unelab w) :: getNonPats xs ys
+getNonPats ((Right (x,n)) :: xs) cs
+  = (IVar n) :: getNonPats xs cs
 getNonPats _ _ = ?fdsgfdsds
 
 export
@@ -270,7 +321,8 @@ splitSingles : {auto c : Ref Ctxt Defs} ->
 splitSingles splits (tm,[]) = pure [tm]
 splitSingles splits (tm,(n :: ns)) 
   = do upd <- splitSingle tm n 
-       [(_,_,updated, newnames)] <- filterCheckable upd | _ => splitSingles splits (tm, ns)
+       [(_,_,updated, newnames)] <- filterCheckable upd
+         | _ => splitSingles splits (tm, ns)
        splitSingles (S splits) (updated, ns ++ newnames)
   where  
         splitSingle : RawImp -> Name -> Core (List (RawImp, List Name))
@@ -282,7 +334,8 @@ splitSingles splits (tm,(n :: ns))
                let (Just pre, suf) = splitOnN (IPatvar x ty scope) n | _ => none
                let front = pre . pats 
                    (newsc, names) = fixUpScope n suf app
-               pure [(front newsc, names)] 
+               newtm <- fillImplicits (front newsc) [] (front newsc) 
+               pure [(newtm, names)] 
         splitSingle _ _ = none
 
 

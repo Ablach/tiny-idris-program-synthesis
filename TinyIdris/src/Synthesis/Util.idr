@@ -12,6 +12,8 @@ import Core.Value
 import TTImp.Elab.Term
 import TTImp.TTImp
 
+import Synthesis.Resugar
+
 export
 repeat : a -> Nat -> List a
 repeat _ Z = []
@@ -20,6 +22,10 @@ repeat a (S k) = a :: repeat a k
 export
 nothing : Core (Maybe a)
 nothing = pure Nothing
+
+export 
+just : a -> Core (Maybe a)
+just = pure . Just
 
 export
 none : Core (List a)
@@ -50,6 +56,16 @@ tryUnify env a b
           then nothing 
           else pure $ Just (ures)
 
+showT : RawImp -> Core ()
+showT (IVar x) = log "var"
+showT (IPi x y argTy retTy) = do log "pi(" ; showT argTy ; log ")" ; showT retTy
+showT (ILam x y argTy scope) = do log "lam(" ; showT argTy ; log ")" ; showT scope
+showT (IPatvar x ty scope) = do log "pat(" ; showT ty ; log ")" ; showT scope
+showT (IApp x y) = do log "app(" ; showT x ; log ") to (" ; showT y ; log ")"
+showT (IHole x) = log "hole"
+showT Implicit = log "implicit"
+showT IType = log "ty"
+
 export
 filterCheckable : {auto c : Ref Ctxt Defs} -> 
                   {auto u : Ref UST UState} ->
@@ -57,6 +73,9 @@ filterCheckable : {auto c : Ref Ctxt Defs} ->
 filterCheckable [] = pure []
 filterCheckable ((x, b) :: xs) =
   do newRef EFail False
+
+
+
      (tm, gd) <- catch (checkTerm [] x Nothing) 
                        (\ _ => do put EFail True
                                   pure (Erased, MkGlue (pure Erased)

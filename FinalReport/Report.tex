@@ -1,4 +1,4 @@
-% Created 2021-03-09 Tue 13:28
+% Created 2021-03-10 Wed 13:54
 % Intended LaTeX compiler: pdflatex
 \documentclass[a4paper]{article}
 \usepackage[utf8]{inputenc}
@@ -28,15 +28,15 @@
  pdftitle={TinyIdris Program Synthesis},
  pdfkeywords={},
  pdfsubject={},
- pdfcreator={Emacs 26.3 (Org mode 9.1.9)}, 
+ pdfcreator={Emacs 27.1 (Org mode 9.3)}, 
  pdflang={English}}
 \begin{document}
 
 \maketitle
-\bibliographystyle{plain}
+bibliographystyle:plain
 
 \section{Introduction}
-\label{sec:org9f61998}
+\label{sec:org4e4495f}
 
 Programming often involves implementing low level details that can be tedious.
 The goal of program synthesis is to automate as much of this as possible, speeding up the process
@@ -47,10 +47,10 @@ towards a solution. Say we have a List data type, and wish to synthesise a defin
 when given another function, and a list, applies the function to each element of the list, a common pattern in
 functional programming. The list argument has been pattern matched on, and the holes to be synthesised
 have been added.\footnote{The examples on this page are written in the programming language Idris. They are not valid in Idris2, the language used throughout the
-rest of this paper. This decision removes some added complexity from the examples. See \cite{BibEntry2020Nov}.}
+rest of this paper. This decision removes some added complexity from the examples. See cite:BibEntry2020Nov.}
 
 \begin{center}
-\begin{minted}[]{idris}
+\begin{minted}[obeytabs=true,tabsize=2]{idris}
 data List : Type -> Type where
   Nil  : List a
   (::) : {a : Type} -> a -> List a -> List a
@@ -72,7 +72,7 @@ reducing the number of incorrect answers returned, and increasing the speed by r
 to be checked. By allowing types to depend on terms we are able to do this, as the following example displays.
 
 \begin{center}
-\begin{minted}[]{idris}
+\begin{minted}[obeytabs=true,tabsize=2]{idris}
 data Vector : Nat -> Type -> Type where
   Nil  : Vector 0 a
   (::) : {a : Type} -> a -> Vector n a -> Vector (1 + n) a
@@ -94,54 +94,50 @@ An \texttt{auto} command has been added to the repl, when given the name of a ho
 returning the string representation of the synthesised term if successful, or a failure message if not.
 
 \begin{enumerate}
-\item {\bfseries\sffamily TODO} : why data types ext? why functional
-\label{sec:org0522525}
+\item TODO: why data types ext? why functional
+\label{sec:org623b4ba}
 
 \clearpage
 \end{enumerate}
 
 \section{The TinyIdris System}
-\label{sec:orgb772f45}
+\label{sec:orgcc0b02c}
 
-TinyIdris is a scaled down version of the Idris2 programming language. The system operates by calling the tinyidris
-executable with the filename of a tinyidris source code file '.tidr'. The file is then processed by the system, 
-where the source code is converted into the internal representation of the language and type checking occurs,
-and each definition is stored in memory. A read eval print loop, or repl
-is then presented, which accepts expressions from the language, evaluates them, and prints out the result. 
+TinyIdris is a scaled down version of the Idris2 programming language. 
+The system operates by calling the tinyidris executable with the 
+filename of a tinyidris source code file '.tidr'. The file is then 
+processed by the system, where the source code is converted into the 
+internal representation of the language and type checking occurs,
+and each definition is stored in memory. A read eval print loop,
+or repl is then presented, which accepts expressions from the language,
+evaluates them, and prints out the result. 
 
 \subsection{The Source code}
-\label{sec:org7aa2fa2}
-Tiny Idris source code files consist of three top level constructs. Data Types, Type Signatures, and Function 
-Definitions. 
+\label{sec:org6a24b1a}
+Tiny Idris source code files consist of three top level constructs.
+Data Types, Type Signatures, and Function Definitions. 
 \subsubsection{Type Signatures}
-\label{sec:orgbc86bb8}
+\label{sec:orga47dfce}
 Type signatures outline the shape of the data that is being transformed, and are written \texttt{f : A}, read "f has type A".
 Where the construct being declared by the type signature takes arguments, it is written \texttt{f : A -> B -> C},
-everything to the left of the final arrow is an argument, and the right hand side is the return type. 
-There can be 0 or more arguments, however there must be exactly one return type,
+everything to the left of the final arrow is the type of each argument, be it datatypes, or function types
+, and the right hand side is the return type. There can be 0 or more arguments, however there must be exactly one return type,
 if multiple values are returned this is done so by constructing a tuple. \texttt{f : A -> B -> (C, D, E)}.
-
+Type signatures are present in both of the following constructs.
 
 \subsubsection{Data Types}
-\label{sec:orgc6dfee4}
-Data types are used to describe how we are transoftming data, by definining how to construct values of the type. 
+\label{sec:orge9ae344}
+Data types describe how to construct values of the type being defined. They consist of a type declaration and
+ a set of data declarations. The type declaration begins with the \texttt{data} keyword and is followed by
+a type signature for the type being defined. The data constructors are type signatures defined in the where block
+that follows. 
 
 \begin{center}
-\begin{minted}[]{idris}
+\begin{minted}[obeytabs=true,tabsize=2]{idris}
 data Bool : Type where
   True : Bool
   False : Bool
-\end{minted}
-\end{center}
 
-The Data type is split into two constructs, a type declaration, and a set of data declarations.
-The type declaration \(data Bool : Type where\) describes the type we are defining, here, we define 'Bool',
-which has type, type. The where clause consists of 0 or more data constructors, here, neither constructor takes
-in any arguments, and both have type Bool. To construct an element of type bool, we must call either of the
-two constructors. 
-
-\begin{center}
-\begin{minted}[]{idris}
 data Nat : Type where
   Zero : Nat
   Suc  : Nat -> Nat
@@ -150,9 +146,10 @@ data Nat : Type where
 
 Defining the natural numbers we may have either zero, or one more than another natural number, 
 here the successor constructor requires the previous number to be passed in as an argument.
+We construct values of a type by calling one of the data constructors and supplying the arguments.
 
 \begin{center}
-\begin{minted}[]{idris}
+\begin{minted}[obeytabs=true,tabsize=2]{idris}
 two : Nat
 two = Suc (Suc Zero)
 \end{minted}
@@ -162,59 +159,205 @@ Constructing the number two, we call the Successor constructor twice, first with
 and with the result of that as the second. 
 
 \subsubsection{Function Definitions}
-\label{sec:orgb63c8f0}
-As seen above, a function definition consists of two components. Those are a type signature,
-and a pattern matching defintion.
+\label{sec:org406f0fb}
+The above example is a function definition, which has no arguments, and returns a value of type Nat. 
+Functions have two components. A type signature, and a pattern matching defintion.
 
 \begin{center}
-\begin{minted}[]{idris}
+\begin{minted}[obeytabs=true,tabsize=2]{idris}
 not : Bool -> Bool
 not True  = False
 not False = True
 
 even : Nat -> Bool
 even Z = True
-even (S n) = not (even n)
+even (S n) = not (even n) 
 \end{minted}
 \end{center}
 
-
+Function definitions have a left hand side and a right hand side. The left hand side lists the arguments
+that have been passed in, and the right hand side constructs a term of the return type. Pattern matching is
+used to inspect the arguments that have been passed in, by inspecting which data constructor has been used to 
+construct it. All of the arguments from the left hand side are available to be used on the right hand side, and
+any number can be matched on.
 
 \subsubsection{Parametricity}
-\label{sec:org0dc189c}
-\subsubsection{Dependent Types}
-\label{sec:orgfd68112}
-\subsection{The Raw Implementation}
-\label{sec:org92fb824}
-\subsection{The Core Representation}
-\label{sec:org6fc335e}
-\subsection{Evaluation}
-\label{sec:orgaeb4ccd}
+\label{sec:orgeee961a}
+
+Similarly to the definition of natural numbers we can define a list of Nats inductively, by first building up from 
+the base case, and successivly adding an Nat.
 
 \begin{center}
-\begin{minted}[]{idris}
-data Binder : Type -> Type where
-	 Lam : Name -> PiInfo -> ty -> Binder ty
-	 Pi : Name -> PiInfo -> ty -> Binder ty
-	 .
-	 .
+\begin{verbatim}
+data NatList : Type where
+  Nil : Natlist
+  Cons : Nat -> NatList -> NatList 
+\end{verbatim}
+\end{center}
 
-data Env : (tm : List Name -> Type) -> List Name -> Type where
-	 Nil : Env tm []
-	 (::) : Binder (tm vars) -> Env tm vars -> Env tm (x :: vars)
+However not all data types have type 'Type'. The language supports polymorphism in the form of indexed types, allowing 
+lists to be defined generically. 
+
+\begin{center}
+\begin{verbatim}
+data List : Type -> Type where
+  Nil : List a
+  Cons : a -> List a -> List a
+\end{verbatim}
+\end{center}
+
+The list data type implicitly recieves the pratmeter \texttt{a : Type}, which results in the type \texttt{List a}. This allows functions
+to operate on lists based on their structure, without inspecting the elements themselves, allowing for more code reuse. 
+
+\begin{center}
+\begin{verbatim}
+map : (a -> b) -> List a -> List b
+map f []        = []
+map f (x :: xs) = (f x) :: map f xs
+\end{verbatim}
+\end{center}
+
+\subsubsection{Dependent Types}
+\label{sec:org400829b}
+This polymorphism is not limited to accepting only types, as Types may
+also depend on values. The previous example of lists can be further 
+extended to the vectors, generic lists of a certain length. 
+
+\begin{center}
+\begin{verbatim}
+data Vector : Nat -> Type -> Type where
+  Nil : Vector Zero a
+  Cons : a -> Vector n a -> Vector (S n) a
+\end{verbatim}
+\end{center}
+
+When constructed, the type of each vector will depend on the values 
+passed in as arguments, if the Cons constructor is used and a vector of 
+4 elements is passed in it will have type Vector 5 a, which is a 
+different type to a Vector 6 a, or Vector Zero a, and so on. 
+
+\begin{enumerate}
+\item {\bfseries\sffamily TODO} example functions
+\label{sec:org03fa806}
+\end{enumerate}
+
+\subsubsection{Differences from the Examples}
+\label{sec:org303024f}
+
+For simplicity of the examples, the examples displayed have not been valid TinyIdris code. 
+We now look to see some differences with TinyIdris code. 
+
+\begin{center}
+\begin{minted}[obeytabs=true,tabsize=2]{common-lisp}
+data Vector : Nat -> Type -> Type where
+ Nil : Vector Z a
+ Cons : a -> Vector n a -> Vector (S n) a
+
+append : Vector n a -> Vector m a -> Vector (n + m) a
+append Nil ys = ys
+append (x :: xs) ys = x :: append xs ys
+
+-----------------------------------------------------------------
+
+data Vec : Nat -> Type -> Type where
+  Nil : (a : Type) -> Vec Z a
+  Cons : (a : Type) -> (n : Nat) -> a -> Vec n a -> Vec (S n) a
+
+append : (a : Type) -> (n : Nat) -> (m : Nat) -> 
+	 Vec n a -> Vec m a -> Vec (add n m) a
+pat a : Type, m : Nat, ys : Vec m a =>
+	append a Z m (Nil a) ys = ys
+pat a : Type, n : Nat, x : a, xs : Vec n a, m : Nat, ys : Vec m a =>
+	append a (S n) m (Cons a n x xs) ys = Cons a (add m n) x (append a n m xs ys)
 \end{minted}
 \end{center}
 
-Binders are either lambdas, Pi binders, pattern variables or pattern types, details of the patterns can be
-omitted here. Informally lambdas take in values to functions, and pi binders say
-"forall values of type, \ldots{}", which can be intuitively seen as the `type' of lambda.
-\texttt{PiInfo} is a simple flag stating if the argument is implicit or explicit. 
-For our purposes, \texttt{ty} indexing the Binder will be \texttt{Term vars}.
-
-The final parameter of a MetaVar is a Term, this is the type of the term to be synthesised.
+The initial code presented supports implicit arguments, with the \texttt{a} and \texttt{n}
+not being passed in explicitly, as they are in the TinyIdris code. The other difference
+is the patterns being matched must be passed in explicitly. These are required due to the 
+lack of full support for implicit arguments.
+\subsection{The Raw Implementation}
+\label{sec:org19ce998}
+Parsing results in a list of declarations. Declarations can be type 
+signatures, \texttt{ImpTy}, consisting of a name and a term. Data type 
+declarations, consisting of a term for the type, and a list of terms 
+for the constructors. Function definitions consist of a name, and a
+list of clauses, where each clause has a left hand side. 
 
 \begin{center}
-\begin{minted}[]{idris}
+\begin{minted}[obeytabs=true,tabsize=2]{idris}
+public export
+data ImpTy : Type where
+	 MkImpTy : (n : Name) -> (ty : RawImp) -> ImpTy
+
+public export
+data ImpClause : Type where
+	 PatClause : (lhs : RawImp) -> (rhs : RawImp) -> ImpClause
+
+public export
+data ImpData : Type where
+	 MkImpData : (n : Name) -> 
+				 (tycon : RawImp) -> -- type constructor type
+				 (datacons : List ImpTy) -> -- constructor type declarations
+				 ImpData
+
+public export
+data ImpDecl : Type where
+	 IClaim : ImpTy -> ImpDecl
+	 IData : ImpData -> ImpDecl
+	 IDef : Name -> List ImpClause -> ImpDecl
+\end{minted}
+\end{center}
+
+\begin{center}
+\begin{minted}[obeytabs=true,tabsize=2]{idris}
+public export
+data RawImp : Type where
+	 IVar : Name -> RawImp
+	 IPi : PiInfo -> Maybe Name ->
+		   (argTy : RawImp) -> (retTy : RawImp) -> RawImp
+	 ILam : PiInfo -> Maybe Name ->
+			(argTy : RawImp) -> (scope : RawImp) -> RawImp
+	 IPatvar : Name -> (ty : RawImp) -> (scope : RawImp) -> RawImp
+	 IApp : RawImp -> RawImp -> RawImp
+	 Implicit : RawImp
+	 IType : RawImp
+\end{minted}
+\end{center}
+
+IVars are the lowest level of terms, each term that is in scope will be 
+referenced by an IVar expression. IPi represents function types, taking in 
+an argument, possibly with a name, and scopem which is the rest of the 
+term. IPatVars are found in each clause of a pattern matching definition 
+taking in a name, term and the scope. IApp represents an application of 
+a function to an argumemt, Type represents the type of types.
+
+TinyIdris has limited support of implicit arguments of the form
+ \texttt{(x : \_)} , this is represented by \texttt{Implicit}.
+
+ILam represents anonymous functions, that take an argumemt, and returns the
+scope, they are represented in the language as \texttt{\textbackslash{} x => scope}, and would
+be used on the right hand side of a clause when constructing a function.
+
+\subsection{The Core Representation}
+\label{sec:orgfb16baf}
+
+After the source has been parsed into a list of declaration, each declaration
+is then processed by the elabourator. Elabouration takes in a rawimp term
+performs type checking to ensure that it is well typed, if a terms are found
+to be ill typed then processing is stopped and an error is thrown, otherwise, 
+if each rawimp term in a declaration is valid then it is added to the context.
+
+The context is a sorted map of names and global definitions, where 
+each globaldef has a type and a definition. 
+
+Along with each of the definitions discussed earlier, they can also be None, which 
+id the definition of a type signature without an accompanying function declaration,
+a hole, or a guess, which are used during unification.
+
+\begin{center}
+\begin{minted}[obeytabs=true,tabsize=2]{idris}
+public export
 data Term : List Name -> Type where
 	 Local : (idx : Nat) -> -- de Bruijn index
 			 (0 p : IsVar name idx vars) -> -- proof that index is valid
@@ -231,40 +374,170 @@ data Term : List Name -> Type where
 \end{minted}
 \end{center}
 
-There are several kinds of terms within the core representation. 
-\texttt{Ref} is a reference to a global variable that is stored in the context,
-for convenience the name type e.g type constructor, is stored with it. \texttt{Meta} represents holes,
-either user or machine generated, and contain a name, and list of terms to which 
-they are applied. \texttt{Binders}, being grouped together, represent lambdas, pi's or patterns,
-with the name being stored, along with the scope. \texttt{App} represents the application
-of one term to another. \texttt{TType} represents "The type of types", in TinyIdris, \texttt{Type:Type}, normally this would be 
-handled using universe levels to prevent Girard's paradox \cite{10.1007/BFb0014058} ,
-  while this presents issues with the soundness of proofs, this should not concern us here.
-\texttt{Erased} represents terms that have been erased. 
+Terms can reference names from either a global or a local scope. Names that are referenced locally
+via a de bruijn index, and a proof that that name is at the index is valid. This enforces terms to
+be well scoped. Terms that are referenced globally \texttt{Ref} contain the name, along with the the nametype, 
+which can be a type constructor, data constructor, bound variable or function. 
 
-It is worth noting that as TinyIdris is a dependently typed language there is no distinction between types and terms,
- thus, the type of a term \emph{x}, is also a term.
+There are four kinds of binders, Pi and PVTy both descrive the types 
+of terms being taken in, while Lam and PVar describe the terms being
+taken in. For convenience have been combined into the binder type, which issue
+taken in by a bind term, along with a name and a scope, where a name was not provided by the user, or a 
+term has been constructed by the system, a machine generated name is used. 
 
-\texttt{Local}, represents a local variable, and is constructed with a de bruijn index, along with a proof that the index is 
-valid\footnote{The \texttt{0} found in the \texttt{IsVar} argument is a quantity, and can safely be ignored for our purposes. For more information, see \cite{BibEntry2020Nov}.} within the names that the term is scoped by. This helps to ensure the correctness of the scoping,
- however it does present an extra challenge when we come to synthesising terms. If we are to use a term that
-is stored within the environment then we must construct the local variable that uses it,
-for which we require a proof that it is in the environment, this is implemented in the Rescope module which can
- be found in Appendix A. 
+Meta terms are constructed during unification, they have a name and a list of arguments to which
+they are applied. App and TType are equivalent to their RawImp counterparts and Erased represents
+erased terms.
+
+Global terms are stored in the context, however we also require a local
+context, this is done via the Environment. 
+
+\begin{center}
+\begin{minted}[obeytabs=true,tabsize=2]{idris}
+data Env : (tm : List Name -> Type) -> List Name -> Type where
+   Nil : Env tm []
+   (::) : Binder (tm vars) -> Env tm vars -> Env tm (x :: vars)
+\end{minted}
+\end{center}
+
+Environments are of the familiar list structure, for generality the first parameter 
+Env takes is of type \texttt{List Name -> Type}, thus it could be an environment of any type 
+that is indexed by a list of names, however, it will, for our purposes only ever be an 
+environment of terms. Since the system contains dependent types, terms may reference 
+those previously brought into scope, the second argument is a list of names, this
+enforces that if a term does reference an earlier term, then it is in the environment. 
+The data constructors ensure that if the environment is empty, then there are no names
+in scope that can be references, each time a binder is added to the environment, then 
+a name that may be referenced is added to the environment along with.  
+
+\subsection{Values}
+\label{sec:org5420ec7}
+   Values within the TinyIdris system are in Head-Normal form, and 
+similarly to terms, are also scoped by a list of names via the NF data
+type, along with some auxillary data types. 
+
+\begin{center}
+\begin{minted}[obeytabs=true,tabsize=2]{idris}
+-- The head of a value: things you can apply arguments to
+public export
+data NHead : List Name -> Type where
+	 NLocal : (idx : Nat) -> (0 p : IsVar name idx vars) ->
+			  NHead vars
+	 NRef   : NameType -> Name -> NHead vars
+	 NMeta  : Name -> List (Closure vars) -> NHead vars
+
+-- Values themselves. 'Closure' is an unevaluated thunk, which means
+-- we can wait until necessary to reduce constructor arguments
+public export
+data NF : List Name -> Type where
+	 NBind    : (x : Name) -> Binder (NF vars) ->
+				(Defs -> Closure vars -> Core (NF vars)) -> NF vars
+	 NApp     : NHead vars -> List (Closure vars) -> NF vars
+	 NDCon    : Name -> (tag : Int) -> (arity : Nat) ->
+				List (Closure vars) -> NF vars
+	 NTCon    : Name -> (tag : Int) -> (arity : Nat) ->
+				List (Closure vars) -> NF vars
+	 NType    : NF vars
+	 NErased  : NF vars
+\end{minted}
+\end{center}
+\subsection{Processing Example}
+\label{sec:org4985236}
+To see exactly what is happening, we shall look at some examples of 
+processing definitions. We begin by looking at elaboration, which is 
+used to convert RawImp to Terms, and is used when processing terms. 
+And then the extra steps taken when processing each type of definition. 
+
+\begin{enumerate}
+\item Elaboration
+\label{sec:org111fc87}
+\begin{center}
+\begin{minted}[obeytabs=true,tabsize=2]{idris}
+export
+checkTerm : {vars : _} ->
+			{auto c : Ref Ctxt Defs} ->
+			{auto u : Ref UST UState} ->
+			Env Term vars -> RawImp -> Maybe (Glued vars) ->
+			Core (Term vars, Glued vars)
+
+checkExp : {vars : _} ->
+		   {auto c : Ref Ctxt Defs} ->
+		   {auto u : Ref UST UState} ->
+		   Env Term vars ->
+		   (term : Term vars) ->
+		   (got : Glued vars) ->
+		   (expected : Maybe (Glued vars)) ->
+		   Core (Term vars, Glued vars)
+\end{minted}
+\end{center}
+
+
+Elaboration is implemented via two functions, checkTerm and checkExp
+(for checkExpected). Checking a term, when provided with an environment, 
+RawImp expression, and possibly a type that we think it is, will, assuming 
+success, return the checked Term in the core language, with its type. 
+
+Glued variables are simply terms, paired with their normal form. The checkTerm 
+function, elaboration proceeds by breaking down terms into their individual
+componenents, checking each component, putting them back together and calling the 
+checkExp function on them, for example, when checking the term \texttt{(IApp f a)}, 
+the function is checked, and if it has the type of a Pi binder, then the 
+argument type is checked, and check exp is called with the an \texttt{App} term with 
+the checked function to the checked argument, and the scope of the function, 
+after being provided the argument as the type, and the expected type provided.
+If the term is a Pi binder then term being taken in is checked, and the 
+environment is extended with the term, the scope of the binder is then
+checked in the updated environment, checkExp is then called with the Bind 
+term, TType as the type, and the expected value. If the given term is an \texttt{IVar} 
+then it is checked if the name is in the local or global scope, and the resulting
+term that is passed to checkExp will be a \texttt{Local} or \texttt{Ref} depending on the check.
+
+
+The checkExp functions purpose is to check that the term that is passed in matches
+the expected term, if there is no expected term then it succeeds, returning 
+the term and its type, otherwise it attempts to unify the type of the term 
+we have, and the type of the expected term, returning the result, otherwise
+failing with an error. 
+
+\item Unification
+\label{sec:org2b8a226}
+Unification is the process of checking a kind of equality between two terms, 
+
+\begin{center}
+\begin{minted}[obeytabs=true,tabsize=2]{idris}
+unify : {vars : _} ->
+		{auto c : Ref Ctxt Defs} ->
+		{auto u : Ref UST UState} ->
+		Env Term vars ->
+		tm vars -> tm vars ->
+		Core UnifyResult
+\end{minted}
+\end{center}
+
+
+\item Processing
+\label{sec:org2921b30}
+
+The Type case is straightforward, in the empty environment, the RawImp 
+term is checked, and the resulting term is added to the context with 
+the definition None. 
+
+The
+\end{enumerate}
 
 \section{Related work}
-\label{sec:org52e679b}
+\label{sec:org5651a39}
 There is a strong relationship between type guided program synthesis and the creation of automatic proof search algorithms.
 It is worth noting that there have also been attempts at synthesising programs from the machine learning community, however these
 are outside the scope of the project and as such are not discussed here. Some of the research presented here has since been 
 improved with the introduction of quantitative types\footnote{Also referred to as resource types.}, where values are annotated with a multiplicity, stating how many 
-times it may be used, this has been shown \cite{10.1145/3314221.3314602} to improve the performance of synthesis algorithms within
+times it may be used, this has been shown cite:10.1145/3314221.3314602 to improve the performance of synthesis algorithms within
 a type driven approach. TinyIdris does not support quantitative types, and hence these are omitted.
 
 \subsection{Automated Theorem Proving in Agda}
-\label{sec:orgf401d39}
+\label{sec:orge7e86bc}
 Agda is a dependently typed programming language and interactive proof assistant, and is the closest relative to Idris.
-Indeed the development of Agda heavily influenced that of Idris \cite{Splv'202020Aug} . The language supports many
+Indeed the development of Agda heavily influenced that of Idris cite:Splv'202020Aug . The language supports many
 of the same features as Idris, such as hole driven development with interactive typing information. 
 Agsy is a tool developed and currently implemented as part of the Agda interactive development system.
 The user can invoke the tool via Agda while the cursor is placed within a hole, alternatively, it exists as a stand alone tool.
@@ -314,7 +587,7 @@ However this may also work in Agsy's favour, as more general approaches may not 
 require specific knowledge of the problem domain.
 
 \subsection{Applications of Applicative Proof Search}
-\label{sec:org3140110}
+\label{sec:org8a420b4}
 This work constructs a library for typed proof search procedures. The approach taken is very general, which allows the 
 framework to be easily specialised to various concrete use cases. The two examples provided use the library to implement a 
 property based testing library and a basic model checker. Here, we cover the main framework, as it shares some similarities 
@@ -337,7 +610,7 @@ The paper goes on to develop two validation libraries. The flexibility of the fr
 suggests that following a similar approach will provide a solid foundation for a proof search algorithm.
 
 \subsection{Synthesis Modulo Recursive Functions}
-\label{sec:org1e0ca28}
+\label{sec:org126740a}
 One of the earlier systems for synthesising programs within a functional programming environment was included in the Leon system.
 The system is implemented in, and able to synthesise, a subset of Scala. The tool is available as both a command line
 tool and a web based application. Although the Synthesiser has typing information available to it, it is not used to 
@@ -350,7 +623,7 @@ unbounded integers. The Synthesiser uses `symbolic descriptions' and can accept 
 synthesis rules that decompose problems into sub-problems. An example problem of splitting a list in the Leon system: 
 
 \begin{center}
-\begin{minted}[]{scala}
+\begin{minted}[obeytabs=true,tabsize=2]{scala}
 def split(lst : List) : (List , List) = choose { (r : (List , List)) => 
 	content(lst) == content(r,_1) ++ content(r,_2)
 }
@@ -361,7 +634,7 @@ This definition will synthesise an incorrect solution, however specifications ca
 indeed we can synthesise the correct solution:
 
 \begin{center}
-\begin{minted}[]{scala}
+\begin{minted}[obeytabs=true,tabsize=2]{scala}
 def split(lst : List) : (List , List) = choose { (r : (List , List)) => 
 	content(lst) == content(r,_1) ++ content(r,_2)
 	&& abs(size(r,_1) - size(r,_2)) <= 1
@@ -414,7 +687,7 @@ has surpassed it by synthesising significantly more problems, and in much less t
 such as condition abduction, which have heavily influenced techniques used in more modern systems.
 
 \subsection{Type and Example Directed Program Synthesis}
-\label{sec:org62a344c}
+\label{sec:org3332a7d}
 The Myth system treats program synthesis as a proof search, that uses type information and concrete input/output examples
 to reduce the size of the search space. The system generates OCaml syntax, however it requires type signatures, differentiating it from the language.
 The work introduces the concept of \emph{refinement trees} that represent constraints on the shape of the generated code. 
@@ -455,7 +728,7 @@ is still relatively low, however some definitions took up to 22 seconds. Example
 problems requiring up to 24 input/output examples to be synthesised, and in some cases coming up with examples which allowed a definition to be synthesised. 
 
 \subsection{Program Synthesis from Polymorphic Refinement Types}
-\label{sec:orgc2883f2}
+\label{sec:orgeb040b0}
 Synquid is a type guided program synthesis system developed that uses the recent idea of liquid types to provide the 
 type checker with more information to effectively reduce the search space.
 Liquid types allow programs to be specified in a more compact manner than using examples. Synquid has
@@ -511,7 +784,7 @@ considerably faster by Synquid. The results show that the extension of the type 
 specifications to be stated more precisely, but to significantly improve performance. 
 
 \subsection{Dependent Type Driven Program Synthesis}
-\label{sec:org4e052df}
+\label{sec:orge6bd376}
 The Idris programming language has proof search functionality built in, with the recent release of Idris2 this has 
 been improved. The internal representation of the language is similar to that of the TinyIdris system, 
 however the full Idris 2 implementation has much more information available, much of this is due to the more sophisticated 
@@ -533,7 +806,7 @@ opposed to a standalone tool, this may introduce performance issues to the synth
 tools. 
 
 \section{The Synthesizer}
-\label{sec:org83118ab}
+\label{sec:org8cc6487}
 At its heart, program synthesis is a search problem. The search space consists of every possible way to
 construct a term from the given context and environment. Following a naive approach will quickly become infeasible, 
 thus we must find ways to restrict the search space to one that can be enumerated within a reasonable amount of time. Since there are 
@@ -547,7 +820,7 @@ propagated back up, and combined to construct the main goal term. If all possibl
 the terms on the left hand sides can be matched on to provide the type checker with more information. 
 
 \subsubsection{Constraints}
-\label{sec:org44a54fc}
+\label{sec:org730db40}
 Constraints exist in several forms. In the TinyIdris system, if the type provided is one or more  
 applications \texttt{App}, the type to be synthesised is the function type, with the added subtyping constraints that the final type unify with
 the application. Constraints are also generated during unification, these constraints result in the construction of a 
@@ -557,7 +830,7 @@ Sub-typing constraints are propagated down and help to reduce the search space. 
 generated we require that all possible outcomes must result in a valid term, and if more constraints are generated
 then they are valid, in order for a top level branching term to be synthesised.
 \subsubsection{Termination checking}
-\label{sec:orgf073f6b}
+\label{sec:orgda881b6}
 When synthesising the definition for a function, the function will already be stored within the context, since it will 
 return the type we are looking for it would be enumerated as a possible definition, this creates obvious termination 
 problems. For this reason, when making a recursive call, there must be some check to ensure at least one of the 
@@ -569,7 +842,7 @@ system.
 The alternate form that termination checking takes is checking that co-inductive definitions, although potentially non 
 terminating, are required to be productive. For simplicity this is omitted here and left as a potential future development.
 \subsubsection{Heuristics}
-\label{sec:org632d28f}
+\label{sec:org5ff38b1}
 It is possible for the algorithm to construct terms which type check, however are still incorrect, especially 
 when there is a lack of type information. Synthesis algorithms can be optimised with heuristics to help prevent this.
 One of the issues can be seen in the map example with lists, the synthesis algorithm does not have enough information to 
@@ -586,7 +859,7 @@ have been enumerated.
 
 Another common optimisation used has been to ensure terms to be synthesised are in \(\beta\)-normal-\(\eta\)-long form. This 
 reduces the number of redundant terms for which synthesis is attempted. If multiple reduction rules apply to a term,
-then there exists a term that can be reached from each reduction through the application of more reduction rules. \cite{10.5555/2788232}
+then there exists a term that can be reached from each reduction through the application of more reduction rules. cite:10.5555/2788232
 By operating only on normalised terms we avoid this branching.
 
 Finally, stopping enumeration once a valid term has been found will cut down on the 
@@ -594,7 +867,7 @@ number of enumerations, however this may lead to worse results if other heuristi
 term rather than simply taking the first found. 
 
 \section{Testing and Evaluation}
-\label{sec:org4dab837}
+\label{sec:org8cb4d01}
 
 A test suite will be created consisting of examples that should each test a specific area of the synthesis algorithm. 
 This should be in the form of several test scripts containing holes, along with a solutions files containing the 
@@ -631,6 +904,6 @@ The questions being asked when evaluating the system will include:
 
 \clearpage
 \nocite{*}
-\bibliography{ProgressReport}
+bibliography:ProgressReport.bib
 \clearpage
 \end{document}

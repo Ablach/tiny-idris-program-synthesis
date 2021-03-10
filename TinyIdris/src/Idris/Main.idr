@@ -96,7 +96,6 @@ repl = do coreLift $ putStr "> "
           defs <- get Ctxt
           coreLift $ putStrLn $ "Type: " ++ show !(normalise defs [] !(getTerm ty))
           nf <- normalise defs [] tm
-          
           coreLift $ putStrLn $ "Evaluated: " ++ show nf
           -- coreLift $ putStrLn $ "resugared: " ++ resugar (unelab [] tm)
           repl

@@ -104,6 +104,7 @@ updateDef n upd
          Just gdef <- lookupDef n defs
               | Nothing => throw (UndefinedName n)
          addDef n (upd gdef)
+
 export 
 mapDefs' : {auto c : Ref Ctxt Defs} -> ((Name , GlobalDef) -> a) -> Core (List a)
 mapDefs' f = pure $ map f (toList !(get Ctxt))
@@ -119,7 +120,7 @@ traverseDefs f = do traverse f (toList !(get Ctxt)) ; pure ()
 export
 defsLength : {auto c : Ref Ctxt Defs} -> Core Nat
 defsLength = pure $ length $ toList !(get Ctxt)
-                               
+                              
 export 
 deleteName : {auto c : Ref Ctxt Defs} -> Name -> Core ()
 deleteName n = do defs <- get Ctxt

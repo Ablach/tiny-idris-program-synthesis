@@ -209,7 +209,8 @@ For simplicity of the examples, the examples displayed have not been valid TinyI
 We now look to see some differences with TinyIdris code. 
 
 #+begin_center
-#+begin_src emacs-lisp
+#+begin_src idris
+
 data Vector : Nat -> Type -> Type where
  Nil : Vector Z a
  Cons : a -> Vector n a -> Vector (S n) a
@@ -516,8 +517,8 @@ constructors.
 The most work is done while processing definitions, each clause has 
 been split into a left hand side of the form, for some function f, 
 #+begin_src idris
-pat a : A, b : B... =>
-   f a b ... 
+pat a : A, b : B =>
+   f a b
 #+end_src
 
 And a right hand side constructing a term of the return type. Processing
@@ -783,62 +784,107 @@ increase the number of terms synthesisable, this system is also implemented as p
 opposed to a standalone tool, this may introduce performance issues to the synthesis that may not hinder the previous 
 tools. 
 
-* The Synthesizer
+* The Synthesis Tool
 At its heart, program synthesis is a search problem. The search space consists of every possible way to
 construct a term from the given context and environment. Following a naive approach will quickly become infeasible, 
 thus we must find ways to restrict the search space to one that can be enumerated within a reasonable amount of time. Since there are 
 many more incorrect programs than there are correct programs, using the type checker to do this seems a good place 
 to start. 
 
-This approach consists of using a set of synthesis rules, that generate constraints 
-and subgoals, propagating the constraints down through the subgoals. Once no more rules apply, the enumeration should begin, using 
-typing information and constraints to restrict the possibilities as much as possible. If this results in a valid term being constructed, the term should be 
-propagated back up, and combined to construct the main goal term. If all possible terms have been enumerated and none are valid then 
-the terms on the left hand sides can be matched on to provide the type checker with more information. 
+The tool has two main modes of operation. It can either synthesise individual terms, or full pattern matching 
+definitions. The TinyIdris repl has been extended with an command, =auto=, which taks as an argument a name.
+If the name provided is a type signature with no definition then a pattern matching definition is synthesised. 
+To support synthesis of individual terms, the language has been extended with 'holes', which in the source 
+code is a question mark followed by a name, which can be provided to the tool. A term, or full definition will then 
+be returned in the form of a string, which can be inserted into the source code file.
+
+** Extensions to the language
+The language has been extended with user inserted holes of the form =?hole_name=. A constructor =IHole : Name -> RawImp=
+was added to the RawImp data type and the parser extended to accept the new syntax. The unification state has also 
+been extended with a sortedmap of Names to RawImp, when IHoles are encountered during processing they are added to the map.
+The =Def= type was extended with a =MetaVar : (vars : List Name) -> Env Term vars -> (retTy : Term vars) -> Def=, 
+the definition stores the local environment that the metavariable is definied in along with it's return type, and 
+the names in scope. User provided holes should only appear on the right hand side of pattern matching definitions, thus 
+we should always have an expected type when holes are elaborated, during elaboration of holes, we get the expected 
+term, and use it to generate a new =Meta= term, with a =MetaVar= definition using the environment and expected term.
+
+To improve performance, certain other information has been added to the unification state, a sorted map of names and 
+term [] for function definitions was added, along with a sortedmap of names and nameTypes for datatypes. These were included
+to cut down the number of names that synthesis is attempted with to only those that could possibly lead to a result. 
+The processing of definitions has been extended to add new types and functions to these maps. Functions are added 
+after the type is processed, allowing them to be used during synthesis, without having been implemented. 
+
+** Synthesising Individual Terms
+
+An individial search is wrapped up in a =Search= record, containing all of the required information. A depth is 
+introduced, to avoid termination issues, for example, when synthesising a term of type =Nat=, without a depth, 
+the algorithm would repeatedly attempt to apply the =Suc= constructor to a =Nat= and synthesise something of type =Nat=
+as the argument. An initial depth of 4 has been found to be sufficiently deep to provide useful results, and not hinder
+perfomance. 
+
+Searches also contain the name of the term, the current environment, the left hand side of the clause being 
+attempted, and the type of the term that is to be synthesised. 
  
-*** Constraints
-Constraints exist in several forms. In the TinyIdris system, if the type provided is one or more  
-applications =App=, the type to be synthesised is the function type, with the added subtyping constraints that the final type unify with
-the application. Constraints are also generated during unification, these constraints result in the construction of a 
-branching term that handles the case where the constraint is satisfied and the case where it is not. 
+#+begin_center
+#+begin_src idris 
+record Search (vars : List Name) where
+ constructor MkSearch
+ depth : Nat
+ name : Name
+ env : Env Term vars
+ lhs : RawImp
+ target : Term vars 
 
-Sub-typing constraints are propagated down and help to reduce the search space. Where branching constraints are 
-generated we require that all possible outcomes must result in a valid term, and if more constraints are generated
-then they are valid, in order for a top level branching term to be synthesised.
-*** Termination checking 
-When synthesising the definition for a function, the function will already be stored within the context, since it will 
-return the type we are looking for it would be enumerated as a possible definition, this creates obvious termination 
-problems. For this reason, when making a recursive call, there must be some check to ensure at least one of the 
-arguments provided is structurally decreasing, and will eventually stop. Within the TinyIdris system this will require the 
-implementation of a termination checker, as this has not been implemented in the language. The synthesis algorithm will also need to know 
-the function that is currently being defined, which is also not available to it within the current implementation of the 
-system. 
+synthesise : {vars : _} -> 
+             {auto c : Ref Ctxt Defs} -> 
+             {auto u : Ref UST UState} ->
+			 Search vars -> Core (List (Term vars))
+ 
+#+end_src
+#+end_center
 
-The alternate form that termination checking takes is checking that co-inductive definitions, although potentially non 
-terminating, are required to be productive. For simplicity this is omitted here and left as a potential future development.
-*** Heuristics 
-It is possible for the algorithm to construct terms which type check, however are still incorrect, especially 
-when there is a lack of type information. Synthesis algorithms can be optimised with heuristics to help prevent this.
-One of the issues can be seen in the map example with lists, the synthesis algorithm does not have enough information to 
-know that the =Nil= constructor is incorrect, however a check can be added to select the most likely term.
-Returning the term which uses the most of the arguments from the left hand side, this is based on the idea that 
-if an argument is provided then it is probably intended to be used. 
 
-Another potential issue is repeated application of functions, for example, when synthesising =Nat=, if we have a =n:Nat=
-=n= would be valid, as would =suc n=, and =suc (suc n)= and so on. One potential way to improve this is to track the number 
-of times a function is called at any given stage, iterative deepening will address this from a termination standpoint.
+It is possible to synthesise terms one of two ways, 
+An individial search is wrapped up in a =Search= record, containing all of the required information. A depth is 
+introduced, to avoid termination issues, for example, when synthesising a term of type =Nat=, without a depth, 
+the algorithm would repeatedly attempt to apply the =Suc= constructor to a =Nat= and synthesise something of type =Nat=
+as the argument. An initial depth of 4 has been found to be sufficiently deep to provide useful results, and not hinder
+perfomance. 
 
-Since pattern matching may lead to redundant matches, ensuring that this only happens after all available terms 
-have been enumerated. 
+Not all terms may be synthesised, we are only able to construct terms with a type as a type. The algorithm begins by 
+checking the type synthesis is being attempted for. If the type is a pi binder then we may construct a lambda, taking
+the argument in, and attempting to synthesise the scope.
 
-Another common optimisation used has been to ensure terms to be synthesised are in \beta-normal-\eta-long form. This 
-reduces the number of redundant terms for which synthesis is attempted. If multiple reduction rules apply to a term,
-then there exists a term that can be reached from each reduction through the application of more reduction rules. cite:10.5555/2788232
-By operating only on normalised terms we avoid this branching.
+If the type is of type =Type= then we are able to synthesise valid terms by using anything of type Type in the context,
+however, this will lead to sevral incorrect answers being generated. Since types are passed in explicitly as patterns, 
+we restrict the usable types to only those that have been passed in, since generally these will be the desired ones. 
 
-Finally, stopping enumeration once a valid term has been found will cut down on the 
-number of enumerations, however this may lead to worse results if other heuristics are determining the 'best' possible
-term rather than simply taking the first found. 
+After moving through every pi binder, the resulting scope must be an application of a type constructor to zero or more
+arguments. If this is not the case, or the maximum depth has been reached, then the algorithm will check the local 
+variables in scope for a term of the given type, since this will only require a maximum of 2 passes of the environment.
+
+If the term is a valid application or type constructor then synthesis is attempted with the local variables and 
+global definitions.
+
+*** Attempting Locals
+The algorithm first attempts to check the local environment for valid terms, this is mostuly common when defining the 
+base case of a recursive function, or when synthesising arguments within attempting definitions. The process is split 
+into two stages. 
+
+Since only PVar and Lam binders result in a usable term being brought into scope the first stage consists of traversing
+the environment and filtering out all of the un-usable binders, if a term is valid then we must construct a =Local= 
+term referencing the name, the list of usable local variables is then passed to the second stage, which traverses the 
+list and gets the binder from the environment. Unification is attempted between the target and the type of the binder,
+if no constraints are generated then the Local term is accepted, and the rest of the environment is checked. 
+
+*** Attempting Globals
+*** Function Types
+*** Structural Recursion
+*** Final Ordering
+** Case Splitting
+** Combining Clauses
+** Unelabouration
+** Resugaring
 
 * Testing and Evaluation
 

@@ -6,39 +6,63 @@ data Bool : Type where
  T : Bool
  F : Bool
 
+ifte : (a : Type) -> Bool -> a -> a -> a
+pat a : Type, et : a, ef : a =>
+  ifte a T et ef = et
+pat a : Type, et : a, ef : a =>
+  ifte a F et ef = ef
+
+data Vec : Nat -> Type -> Type where
+  Nil : (a : Type) -> Vec Z a
+  Cons : (a : Type) -> (n : Nat) -> a -> Vec n a -> Vec (S n) a
+
+data Pair : Type -> Type -> Type where
+  MkPair : (a : Type) -> (b : Type) -> a -> b -> Pair a b
+
+data Maybe : Type -> Type where
+  Nothing : (a : Type) -> Maybe a
+  Just : (a : Type) -> a -> Maybe a
+
+data Le : Nat -> Nat -> Type where
+  zlen : (n : Nat) -> Le Z n
+  sles : (n : Nat) -> (m : Nat) -> (Le n m) -> Le (S n) (S m)
+
 add : Nat -> Nat -> Nat
 pat n =>
   add Z n = n
 pat m : Nat, n : Nat =>
   add (S m) n = S (add m n)
 
-
-data Vec : Nat -> Type -> Type where
-  Nil : (a : Type) -> Vec Z a
-  Cons : (a : Type) -> (n : Nat) -> a -> Vec n a -> Vec (S n) a
-
 append : (a : Type) -> (n : Nat) -> (m : Nat) -> 
-	 Vec n a -> Vec m a -> Vec (add n m) a
-pat a : Type, m : Nat, ys : Vec m a =>
-    append a Z m (Nil a) ys = ?v01
-pat a : Type, n : Nat, x : a, xs : Vec n a, m : Nat, ys : Vec m a =>
-    append a (S n) m (Cons a n x xs) ys = ?v02
+	 (xs : Vec n a) -> (ys : Vec m a) -> Vec (add n m) a
 
-map : (a : Type) -> (b : Type) -> (n : Nat) -> (a -> b) -> Vec n a -> Vec n b
-pat a : Type, b : Type, f : (a -> b) =>
-   map a b Z f (Nil a) = ?v03
-pat a : Type, b : Type, n : Nat, f : (a -> b), x : a, xs : Vec n a =>
-   map a b (S n) f (Cons a n x xs) = ?v04
-
+map : (a : Type) -> (b : Type) -> (n : Nat) -> (f : (a -> b)) -> (xs : Vec n a) -> Vec n b
+pat a : Type, b : Type, f : ((e : a) -> b) => 
+	map a b Z f (Nil a) = ?v01
+pat a : Type, b : Type, n : Nat, f : ((e : a) -> b), x : a, xs : Vec n a => 
+	map a b (S n) f (Cons a n x xs) = ?v02
 replicate : (a : Type) -> (x : a) -> (n : Nat) -> Vec n a
-pat a : Type, x : a => 
-   replicate a x Z = ?v05
-pat a : Type, x : a, n : Nat => 
-   replicate a x (S n) = ?v06
 
-drop : (a : Type) -> (n : Nat) -> (m : Nat) -> Vec (add n m) a -> Vec m a
-pat a : Type, n : Nat, m : Nat, ys : Vec m a =>
-  drop a Z m ys = ?v07
-pat a : Type, n : Nat, m : Nat, x : a, xs : Vec (add n m) a =>
-  drop a (S n) m (Cons a m x xs) = ?v08
+minus : Nat -> Nat -> Nat
+pat n : Nat =>
+ minus Z n = n
+pat m : Nat =>
+ minus (S m) Z = Z
+pat m : Nat, n : Nat =>
+ minus (S m) (S n) = minus m n
 
+drop : (a : Type) -> (n : Nat) -> (m : Nat) -> (xs : Vec n a) -> Vec (minus n m) a
+
+foldr : (a : Type) -> (n : Nat) -> (b : Type) -> (f : (aa : a) -> (ab : b) -> b) -> (acc : b) -> (xs : Vec n a) -> b
+
+isEmpty : (a : Type) -> (n : Nat) -> (xs : Vec n a) -> Bool
+
+isElem : (a : Type) -> (n : Nat) -> (x : a) -> (xs : Vec n a) -> Bool
+
+duplicate : (a : Type) -> (n : Nat) -> (xs : Vec n a) -> Vec (add n n) a
+
+zip : (a : Type) -> (n : Nat) -> (b : Type) -> (xs : Vec n a) -> (ys : Vec n b) -> Vec n (Pair a b)
+
+ithElem : (a : Type) -> (n : Nat) -> (m : Nat) -> (Le m n) -> (xs : Vec n a) -> a
+
+index : (a : Type) -> (n : Nat)-> (x : a) -> (xs : Vec n a) -> Maybe Nat

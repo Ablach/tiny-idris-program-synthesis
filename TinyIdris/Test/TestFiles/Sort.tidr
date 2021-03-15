@@ -1,10 +1,51 @@
+data Eq : (a : Type) -> a -> a -> Type where
+  refl : (a : Type) -> (x : a) -> Eq a x x
+
 data Nat : Type where
   Z : Nat
   S : Nat -> Nat
 
+data Vec : Nat -> Type -> Type where
+  VNil : (a : Type) -> Vec Z a
+  VCons : (a : Type) -> (n : Nat) -> a -> Vec n a -> Vec (S n) a
+
+data List : Type -> Type where
+  Nil : (a : Type) -> List a
+  Cons : (a : Type) -> a -> List a -> List a
+
+
 data Bool : Type where
- T : Bool
- F : Bool
+ True : Bool
+ False : Bool
+
+ifte : (a : Type) -> Bool -> a -> a -> a
+pat a : Type, et : a, ef : a =>
+  ifte a True et ef = et
+pat a : Type, et : a, ef : a =>
+  ifte a False et ef = ef
+
+
+le : (n : Nat) -> (m : Nat) -> Bool
+le Z Z = True
+pat m : Nat => 
+ le Z (S m) = True
+pat n : Nat =>
+ le (S n) Z = False
+pat n : Nat, m : Nat =>
+ le (S n) (S m) = le n m
+
+sorted : (n : Nat) -> Vec n Nat -> Bool
+sorted Z (VNil Nat) = True
+pat n : Nat, x : Nat =>
+ sorted n (VCons Nat n x (VNil Nat)) = True
+pat n : Nat, x : Nat, y : Nat, xs : Vec n Nat =>
+ sorted (S n) (VCons Nat (S n) x (VCons Nat n y xs)) 
+   = ifte Bool (le x y) (sorted n (VCons Nat n y xs)) False
+
+data SortedVec : Nat -> Type where
+  SNil : SortedVec Z
+  SCons : (n : Nat) -> (m : Nat ) -> (v : Vec m Nat) -> 
+	    (Eq Bool True (sorted (S m) (VCons Nat m n v))) -> SortedVec (S m)
 
 add : Nat -> Nat -> Nat
 pat n =>
@@ -12,17 +53,14 @@ pat n =>
 pat m : Nat, n : Nat =>
   add (S m) n = S (add m n)
 
+len : (a : Type) -> List a -> Nat
+pat a : Type =>
+  len a (Nil a) = Z
+pat a : Type, x : a, xs : List a =>
+  len a (Cons a x xs) = S (len a xs)
 
-data Vec : Nat -> Type -> Type where
-  Nil : (a : Type) -> Vec Z a
-  Cons : (a : Type) -> (n : Nat) -> a -> Vec n a -> Vec (S n) a
+listToVec : (a : Type) -> (xs : List a) -> Vec (len a xs) a
 
-append : (a : Type) -> (n : Nat) -> (m : Nat) -> 
-	 (xs : Vec n a) -> (ys : Vec m a) -> Vec (add n m) a
+vecToList : (a : Type) -> (n : Nat) -> Vec n a -> List a
 
-map : (a : Type) -> (b : Type) -> (n : Nat) -> (f : (a -> b)) -> (xs : Vec n a) -> Vec n b
-
-replicate : (a : Type) -> (x : a) -> (n : Nat) -> Vec n a
-
-drop : (a : Type) -> (n : Nat) -> (m : Nat) -> (xs : Vec (add n m) a) -> Vec m a
-
+insert : (m : Nat) -> (n : Nat) -> (v : SortedVec n) -> SortedVec (S n)

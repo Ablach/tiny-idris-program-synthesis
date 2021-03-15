@@ -16,42 +16,54 @@ data List : Type -> Type where
   Cons : (a : Type) -> a -> List a -> List a
 
 data Vec : Nat -> Type -> Type where
-  Nil : (a : Type) -> Vec Z a
-  Cons : (a : Type) -> (n : Nat) -> a -> Vec n a -> Vec (S n) a
+  VNil : (a : Type) -> Vec Z a
+  VCons : (a : Type) -> (n : Nat) -> a -> Vec n a -> Vec (S n) a
 
-len : (a : _) -> List a -> Nat
+len : (a : Type) -> List a -> Nat
 pat a : Type =>
   len a (Nil a) = Z
 pat a : Type, x : a, xs : List a =>
   len a (Cons a x xs) = S (len a xs)
 
-listToVec : (a : _) -> (xs : List a) -> Vec (len xs) a
+listToVec : (a : Type) -> (xs : List a) -> Vec (len a xs) a
 pat a : Type =>
-  listToVec a (Nil a) = Nil a 
+  listToVec a (Nil a) = VNil a 
 pat a : Type, x : a, xs : List a =>
-  listToVec a (Cons a x xs) = Cons a (len xs) x (listToVec a xs)
+  listToVec a (Cons a x xs) = VCons a (len a xs) x (listToVec a xs)
 
-vecToList : (a : _) -> (n : _) -> Vect n a -> List a
+vecToList : (a : Type) -> (n : Nat) -> Vec n a -> List a
 pat a : Type => 
-  vecToList a Z Nil a = Nil a
+  vecToList a Z (VNil a) = Nil a
 pat a : Type, n : Nat, x : a, xs : Vec n a =>
-  vecToList a (S n) (Cons a n x xs) = Cons a x (vecToList a n xs)
+  vecToList a (S n) (VCons a n x xs) = Cons a x (vecToList a n xs)
 
-sym : (a : _) -> (x : a) -> (y : a) -> Eq x y -> Eq y x
-pat a : Type, x : a, y : a, prf : (Eq x y) =>
-  sym a x y prf = ?e01
+data Bot : Type where 
 
-trans : (a : _) -> (x : a) -> (y : a) -> (z : a) -> Eq x y -> Eq y z -> Eq x z
-pat a : Type, x : a, y : a, z : a, prf : (Eq x y), prf' : (Eq y z) =>
-  trans a x y x prf prf' = ?e02
+data DU : Type -> Type -> Type where
+  inl : (a : Type) -> (b : Type) -> (el : a) -> DU a b
+  inr : (a : Type) -> (b : Type) -> (el : b) -> DU a b
 
-cong : (a : _) -> (b : _) -> (x : a) -> (y : a) -> (a -> b) -> Eq x y -> Eq (f x) (f y)
-pat a : Type, b : Type, x : a, y : a, f : (a -> b), prf : (Eq x y) =>
-  cong a b x y f prf = ?e03
+botElim : (a : Type) -> Bot -> a
 
-vofLofV : (a : _) -> (n : Nat) -> (v : Vec n a) -> Eq (listToVec (VecToList v))  v
-pat a : Type =>
-  vofLofV a Z (Nil a) = ?e04
-pat a : Type, n : Nat, x : a, xs : Vec n a =>
-  vofLofV a (S n) (Cons a n x xs) = ?e05
+not : Type -> Type
+pat p : Type =>
+  not p = Bot
+
+plusComm : (n : Nat) -> (m : Nat) -> Eq Nat (add n m) (add m n)
+
+plusSuc : (n : Nat) -> (m : Nat) -> Eq Nat (add n (S m)) (S (add n m))
+
+sym : (a : Type) -> (x : a) -> (y : a) -> Eq a x y -> Eq a y x
+
+trans : (a : Type) -> (x : a) -> (y : a) -> (z : a) -> Eq a x y -> Eq a y z -> Eq a x z
+
+cong : (a : Type) -> (b : Type) -> (x : a) -> (y : a) -> (f : a -> b) -> Eq a x y -> Eq b (f x) (f y) 
+
+vofLofV : (a : Type) -> (n : Nat) -> (v : Vec n a) -> Eq (Vec n a) (listToVec a (vecToList a n v))  v
+
+appDU : (a : Type) -> (b : Type) -> (c : Type) -> (DU a b) -> (a -> c) -> (b -> c) -> c
+
+notNot : (a : Type) -> a -> not (not a)
+
+nnnN : (a : Type) -> not (not (not a)) -> not a
 

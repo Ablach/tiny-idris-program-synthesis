@@ -73,9 +73,6 @@ filterCheckable : {auto c : Ref Ctxt Defs} ->
 filterCheckable [] = pure []
 filterCheckable ((x, b) :: xs) =
   do newRef EFail False
-
-
-
      (tm, gd) <- catch (checkTerm [] x Nothing) 
                        (\ _ => do put EFail True
                                   pure (Erased, MkGlue (pure Erased)

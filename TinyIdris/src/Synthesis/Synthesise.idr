@@ -93,8 +93,6 @@ tryIfSuccessful s@(MkSearch (S depth) name env lhs target) n nty (NBind m (Pi nm
               Just ures <- tryUnify env target !(quote defs env filled)
                | _ => do deleteMetas fas ;  none
               deleteMetas fas
-              
-              --log $ "trying " ++ (show tm) ++ "with scope " ++ (show !(quote defs env sc'))
               (r :: rs) <- tryIfSuccessful s n nty sc'
                | _ => none
               pure $ map (\ z => App z tm) (r :: rs)
@@ -111,15 +109,17 @@ tryIfSuccessful (MkSearch depth name env lhs target) n nty tm
 structuralRecursionCheck : {vars :_} ->
                            {auto c : Ref Ctxt Defs} ->
                            {auto u : Ref UST UState} ->
-                           RawImp -> Term vars ->
+                           Env Term vars -> RawImp -> Term vars ->
                            Core Bool
-structuralRecursionCheck  lhs rhs
+structuralRecursionCheck env lhs rhs
  = do let tm = getScope lhs
-          (fn, args) = getArgs tm
+          (IVar fn, args) = getArgs tm | _ => throw (GenericMsg "Shouldn't happen")
           tm' = unelab rhs
-          (fn' , args') = getArgs tm' 
+          (IVar fn', args') = getArgs tm' | _ => throw (GenericMsg "Shouldn't happen")
       -- return true if they are different
-      pure $ (checkRI fn fn') || (checkArgs args (reverse args'))
+      pure $ if fn == fn' 
+                then checkArgs args (reverse args')
+                else True
  where getScope : RawImp -> RawImp
        getScope (IPatvar x ty scope) = getScope scope
        getScope tm = tm
@@ -128,23 +128,21 @@ structuralRecursionCheck  lhs rhs
        getArgs (IApp f a) = let (f', as) = getArgs f in (f' , a :: as)
        getArgs lhs = (lhs, [])
 
-       checkRI : RawImp -> RawImp -> Bool
-       checkRI (IVar x) (IVar y) = not (x == y) 
-       checkRI (IPi x y argTy retTy) (IPi x' y' argTy' retTy') = checkRI argTy argTy' || checkRI retTy retTy' 
-       checkRI (ILam x y argTy scope) (ILam x' y' argTy' scope') = checkRI argTy argTy' || checkRI scope scope'
-       checkRI (IPatvar x ty scope) (IPatvar x' ty' scope') =  checkRI ty ty' || checkRI scope scope'
-       checkRI (IApp x y) (IApp x' y') = checkRI x x' || checkRI y y'
-       checkRI (IHole x) (IHole y) = not (x == y)
-       checkRI Implicit Implicit = False
-       checkRI IType IType = False
-       checkRI _ _ = True 
+       nameIn : Name -> RawImp -> Bool
+       nameIn n (IVar x) = n == x
+       nameIn n (IApp x y) = nameIn n x || nameIn n y
+       nameIn n _ = True
 
        checkArgs : List RawImp -> List RawImp -> Bool
-       checkArgs (l :: ls) (r :: rs) = checkRI l r || checkArgs ls rs
+       checkArgs ls ((IVar x) :: rs) = case filter (nameIn x) ls of
+                                            [] => True
+                                            (y :: xs) => checkArgs ls rs
+       checkArgs ls ((IApp x y) :: rs) = checkArgs ls [x] || checkArgs ls [y]
+       checkArgs ls (_ :: rs) = checkArgs ls rs
        -- we have reached the end and none have been different
-       checkArgs [] [] = False
-       -- shouldn't really happen, but different arg len is different
-       checkArgs _ _ = True 
+       checkArgs ls [] = False
+
+
 
 tryDef : {vars : _} ->
          {auto c : Ref Ctxt Defs} -> 
@@ -152,13 +150,14 @@ tryDef : {vars : _} ->
          Search vars -> Name -> NameType ->
          Term [] -> Core (List (Term vars))
 tryDef s@(MkSearch depth name env lhs target) n nty tm 
- = do defs <- get Ctxt
+ = do defs <- get Ctxt 
       norm <- nf defs env (rewrite sym (appendNilRightNeutral vars) in weakenNs vars tm)
       (ntm , args) <- fillMetas env norm
       deleteMetas args
       qtm <- quote defs env ntm
       Just cs <- tryUnify env target qtm
         | _ => none
+     
       tryIfSuccessful s n nty norm
       
 tryLocals : {vars : _} -> 
@@ -167,7 +166,21 @@ tryLocals : {vars : _} ->
             Search vars -> 
             (usable : List (Term vars)) ->
             Core (List (Term vars))
-tryLocals s@(MkSearch depth name env lhs target) (l@(Local idx p) :: usable)
+tryLocals s@(MkSearch (S depth) name env lhs target) (l@(Local idx p) :: usable)
+ = case !(tryUnify env target (binderType $ getBinder p env)) of 
+        Just (MkUnifyResult [] holesSolved) => 
+           do --  log $ "found " ++ (resugar $ unelab env (Local idx p)) ++ " for " ++ (show target)
+              pure (Local idx p :: !(tryLocals s usable))
+        _ => case (binderType $ getBinder p env) of 
+                  fn@(Bind x (Pi y z w) scope) => 
+                     do defs <- get Ctxt
+                        (filled, metas) <- fillMetas env !(nf defs env fn)
+                        deleteMetas metas
+                        Just ures <- tryUnify env target !(quote defs env filled)
+                          | _ => tryLocals s usable
+                        pure $ !(tryIfSuccessful s (nameAt idx p) Bound filled) ++ !(tryLocals s usable)
+                  _ => tryLocals s usable
+tryLocals s@(MkSearch Z name env lhs target) (l@(Local idx p) :: usable)
  = case !(tryUnify env target (binderType $ getBinder p env)) of 
         Just (MkUnifyResult [] holesSolved) => 
            do --  log $ "found " ++ (resugar $ unelab env (Local idx p)) ++ " for " ++ (show target)
@@ -212,7 +225,7 @@ synthesiseWorlds n [] = pure $ Just []
 synthesiseWorlds n ((vars ** (env, tm, ri)) :: xs)
  = do let s = (MkSearch 4 n env ri tm)
       (t :: ts) <- synthesise s | _ => nothing  
-      (t' :: ts') <- filterM (structuralRecursionCheck ri) (t :: ts) | _ => nothing
+      (t' :: ts') <- filterM (structuralRecursionCheck env ri) (t :: ts) | _ => nothing
       Just rest <- synthesiseWorlds n xs | _ => nothing
       clause <- getClause (s, t', ri)
       pure $ Just (clause :: rest)
@@ -265,7 +278,8 @@ run n = do Just def <- lookupDef n !(get Ctxt)
                     Nothing  => pure "No match"
                (MetaVar vars env retTy) => 
                 do let Just lhs = lookup n (userholes ust) | _ => pure "Missing hole"
-                   (r :: rs) <- synthesise (MkSearch 4 n env lhs retTy)                        
+                   rs <- synthesise (MkSearch 4 n env lhs retTy)                        
+                   (r :: rs') <- filterM (structuralRecursionCheck env lhs) rs
                     | _ => pure "No match"
                    -- here we want to add in some heuristic for sorting
                    pure $ resugar $ unelab r

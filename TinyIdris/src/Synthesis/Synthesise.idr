@@ -91,8 +91,8 @@ tryIfSuccessful s@(MkSearch (S depth) name env lhs target) n nty (NBind m (Pi nm
               sc' <- sc defs (toClosure env tm)
               (filled , fas) <- fillMetas env sc'
               Just ures <- tryUnify env target !(quote defs env filled)
-               | _ => do deleteMetas fas ;  none
-              deleteMetas fas
+               | _ => none
+              
               (r :: rs) <- tryIfSuccessful s n nty sc'
                | _ => none
               pure $ map (\ z => App z tm) (r :: rs)
@@ -153,7 +153,7 @@ tryDef s@(MkSearch depth name env lhs target) n nty tm
  = do defs <- get Ctxt 
       norm <- nf defs env (rewrite sym (appendNilRightNeutral vars) in weakenNs vars tm)
       (ntm , args) <- fillMetas env norm
-      deleteMetas args
+      
       qtm <- quote defs env ntm
       Just cs <- tryUnify env target qtm
         | _ => none
@@ -175,7 +175,7 @@ tryLocals s@(MkSearch (S depth) name env lhs target) (l@(Local idx p) :: usable)
                   fn@(Bind x (Pi y z w) scope) => 
                      do defs <- get Ctxt
                         (filled, metas) <- fillMetas env !(nf defs env fn)
-                        deleteMetas metas
+                        
                         Just ures <- tryUnify env target !(quote defs env filled)
                           | _ => tryLocals s usable
                         pure $ !(tryIfSuccessful s (nameAt idx p) Bound filled) ++ !(tryLocals s usable)
@@ -194,7 +194,7 @@ synthesise (MkSearch depth name env lhs (Bind n (Pi n' pinfo tm) scope))
  = pure $ map (Bind n (Lam n' pinfo tm))
               !(synthesise (MkSearch depth n (Lam n' pinfo tm :: env) lhs scope))
 synthesise s@(MkSearch d name env lhs TType) 
-  = pure $ !(tryLocals s (getUsableEnv [] env)) ++ !typeRefs
+  = pure $ !(tryLocals s (getUsableEnv [] env)) 
 synthesise s@(MkSearch 0 name env lhs tm)
  = tryLocals s (getUsableEnv [] env)
 synthesise s@(MkSearch (S k) name env lhs tm)
@@ -231,6 +231,17 @@ synthesiseWorlds n ((vars ** (env, tm, ri)) :: xs)
       pure $ Just (clause :: rest)
 
 
+containsBaseCase : List RawImp -> Name -> Core Bool
+containsBaseCase [] n = pure False
+containsBaseCase ((IApp x y) :: xs) n = if n == !(headName x)
+                                           then containsBaseCase xs n
+                                           else pure True
+  where headName : RawImp -> Core Name
+        headName (IVar z) = pure z
+        headName (IApp z w) = headName z
+        headName _ = throw (GenericMsg "Invalid expression at head of synthesised term")
+containsBaseCase _ _ = pure True
+
 synthesisePM : {auto c : Ref Ctxt Defs} -> 
                {auto u : Ref UST UState} ->
                Name -> Term []->
@@ -238,6 +249,7 @@ synthesisePM : {auto c : Ref Ctxt Defs} ->
                Core (Maybe (Def, List (Clause, RawImp, RawImp)))
 synthesisePM n ty ss
   = do Just clauses <- synthesiseWorlds n ss | _ => nothing
+       True <- containsBaseCase (map (\ (_, (_,a)) => a) clauses) n | _ => nothing
        (as ** ct) <- getPMDef n ty $ map (\ (a,_,_) => a) clauses
        pure $ Just (PMDef as ct, clauses)
 
@@ -249,18 +261,18 @@ getLhs (Bind x (Pi m pinfo tm) scope) n ls
          IPatvar x tm' sc
 getLhs tm n ls = apply (IVar n) (reverse ls)
 
-begin : {auto c : Ref Ctxt Defs} ->
+defSearch : {auto c : Ref Ctxt Defs} ->
         {auto u : Ref UST UState} -> 
         GlobalDef -> Name -> List RawImp -> Nat ->
         Core (Maybe (Def, List (Clause, RawImp, RawImp)))
-begin def n lhs splits = 
+defSearch def n lhs splits = 
   do cs@(c :: cases) <- traverse (splitLhs False splits) lhs | _ => pure Nothing
      gs@(p :: ps) <- filterCheckable (concat cs) | _ => pure Nothing
      let gs' = concat !(traverse (splitSingles (S splits)) (map (\ (_,_,a) => a) gs)) 
      gs''@(p' :: ps') <- filterCheckable (map (\ g => (g,())) gs') | _ => nothing
      Just res <- synthesisePM n (type def)
                   !(traverse (\ (_,gd,ri,_) => pure $ getSearchData !(getTerm gd) [] ri) gs'')
-      | _ => begin def n (map (\ (_,_,ri,_) => ri) gs'') (S splits) 
+      | _ => defSearch def n (map (\ (_,_,ri,_) => ri) gs'') (S splits) 
      pure $ Just res
 
 
@@ -273,7 +285,7 @@ run n = do Just def <- lookupDef n !(get Ctxt)
            ust <- get UST
            case definition def of
                None =>
-                  case !(begin def n [getLhs (type def) n []] 0) of
+                  case !(defSearch def n [getLhs (type def) n []] 0) of
                     Just (res, clauses) => pure $ resugarType clauses n $ unelab (type def)
                     Nothing  => pure "No match"
                (MetaVar vars env retTy) => 

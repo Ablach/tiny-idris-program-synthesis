@@ -1,165 +1,191 @@
 module Tests
 
+%hide List
+%hide Nat
+%hide Pair 
+%hide DPair
+
+data Pair : Type -> Type -> Type where
+  MkPair : (x : a) -> (y : b) -> Pair a b
+
+data DPair : (a : Type) -> (a -> Type) -> Type where
+ MkDPair : (e : a) -> (pf : p e) -> DPair a p
+
+data List : Type -> Type where
+  LNil  : List a
+  LCons : a -> List a -> List a 
+
+data Nat : Type where
+  Z : Nat
+  S : Nat -> Nat
+
+(+) : Nat -> Nat -> Nat
+Z + m = m
+(S n) + m = S (n + m)
+
+minus : Nat -> Nat -> Nat
+minus Z m = Z
+minus n Z = n
+minus (S n) (S m) = minus n m
+
 append : (xs : List a) -> (ys : List a) -> List a
-append [] ys = ys
-append (x :: xs) ys = ys
 
 map : (a -> b) -> List a -> List b
-map f [] = []
-map f (x :: xs) = []
 
-
-
-lfoldr : (a -> b -> b) -> (acc : b) -> List a -> b
-lfoldr f acc [] = acc
-lfoldr f acc (x :: xs) = acc
-
-
+foldr : (a -> b -> b) -> (acc : b) -> List a -> b
 
 replicate : a -> Nat -> List a
-replicate x k = []
-
-
 
 
 drop : Nat -> (xs : List a) -> List a
-drop Z xs = xs
-drop (S k) xs = xs
-
-
 
 isEmpty : List a -> Bool
-isEmpty [] = False
-isEmpty (x :: xs) = False
-
-
-
 
 isElem :  a -> List a -> Bool
-isElem x [] = False
-isElem x (y :: xs) = False
-
-
 
 duplicate : List a -> List a
-duplicate [] = []
-duplicate (x :: xs) = xs
 
-
-
-zip : List a -> List b -> List (a, b)
-zip [] [] = []
-zip [] (x :: xs) = []
-zip (x :: xs) [] = []
-zip (x :: xs) (y :: ys) = []
-
-
-
+zip : List a -> List b -> List (Pair a b)
 
 ithElem : List a -> Nat -> Maybe a
-ithElem [] k = Nothing
-ithElem (x :: xs) k = Nothing
-
-
-
-
-
 
 index : a -> List a -> Maybe Nat
-index x xs = Nothing
-
 
 
 data Vect : Nat -> Type -> Type where
-  Nil : Vect Z a
-  Cons : a -> Vect n a -> Vect (S n) a
+  VNil : Vect Z a
+  VCons : a -> Vect n a -> Vect (S n) a
 
-vappend : (xs : Vect n a) -> (ys : Vect m a) -> Vect (n + m) a
-vappend [] ys = ys
-vappend (Cons x y) ys = Cons x (vappend y ys)
+append' : (xs : Vect n a) -> (ys : Vect m a) -> Vect (n + m) a
 
+map' : (a -> b) -> Vect n a -> Vect n b
 
+foldr' : (a -> b -> b) -> (acc : b) -> Vect n a -> b
 
+replicate' : a -> (n : Nat) -> Vect n a
 
-vmap : (a -> b) -> Vect n a -> Vect n b
-vmap f [] = []
-vmap f (Cons x y) = Cons (f x) (vmap f y)
+drop' : (m : Nat) -> (xs : Vect n a) -> Vect (minus n m) a
 
+isEmpty' : Vect n a -> Bool
 
+isElem' :  a -> Vect n a -> Bool
 
-
-vfoldr : (a -> b -> b) -> (acc : b) -> Vect n a -> b
-vfoldr f acc [] = acc
-vfoldr f acc (Cons x y) = acc
+duplicate' : Vect n a -> Vect (n + n) a
 
 
 
+zip' : Vect n a -> Vect n b -> Vect n (Pair a b)
 
+ithElem' : Vect n a -> Nat -> Maybe a
 
+index' : a -> Vect n a -> Maybe Nat
 
-vreplicate : a -> (n : Nat) -> Vect n a
-vreplicate x Z = []
-vreplicate x (S k) = Cons x (vreplicate x k)
-
-
-
-
-vdrop : (m : Nat) -> (xs : Vect n a) -> Vect (minus n m) a
-vdrop Z xs = ?vdrop_rhs_5
-vdrop (S k) xs = ?vdrop_rhs_3
-
-
-
-
-
-
-visEmpty : Vect n a -> Bool
-visEmpty [] = False
-visEmpty (Cons x y) = False
-
-
-
-
-visElem :  a -> Vect n a -> Bool
-visElem x [] = False
-visElem x (Cons y z) = False
-
-
-
-vduplicate : Vect n a -> Vect (n + n) a
-vduplicate [] = []
-vduplicate (Cons x y) = Cons x ?vduplicate_rhs_3
-
-
-vzip : Vect n a -> Vect n b -> Vect n (a, b)
-vzip [] y = []
-vzip (Cons x z) (Cons y w) = Cons (x, y) (vzip z w)
-
-
-
-
-vithElem : Vect n a -> Nat -> Maybe a
-vithElem [] k = Nothing
-vithElem (Cons x y) k = Nothing
-
-
-
-
-vindex : a -> Vect n a -> Maybe Nat
-vindex x y = Nothing
 
 len : List a -> Nat
-len [] = Z
-len (x :: xs) = S (len xs)
+len LNil = Z
+len (LCons x y) = S (len y)
+
+
 
 listToVec : (ls : List a) -> Vect (len ls) a
-listToVec [] = []
-listToVec (x :: xs) = Cons x (listToVec xs)
-
-
+listToVec LNil = VNil
+listToVec (LCons x y) = VCons x (listToVec y)
 
 vecToList : Vect n a -> List a
-vecToList [] = []
-vecToList (Cons x y) = x :: vecToList y
+vecToList VNil = LNil
+vecToList (VCons x y) = LCons x (vecToList y)
+
+data Bot : Type where 
+
+data DU : Type -> Type -> Type where
+  DUinl : (a : Type) -> (b : Type) -> (el : a) -> DU a b
+  DUinr : (a : Type) -> (b : Type) -> (el : b) -> DU a b
+
+data Equality : (a : Type) -> a -> a -> Type where
+ Refl : (a : Type) -> (e : a) -> Equality a e e
+
+botElim : Bot -> a
+
+not : Type -> Type
+not p = Bot
+
+plusComm : (n : Nat) -> (m : Nat) -> Equality Nat (n + m) (m + n)
+
+
+plusSuc : (n : Nat) -> (m : Nat) -> Equality Nat ((+) n (S m)) (S ((+) n m))
+
+sym : (a : Type) -> (x : a) -> (y : a) -> Equality a x y -> Equality a y x
+sym a x x (Refl a x) = Refl a x
+
+
+trans : (a : Type) -> (x : a) -> (y : a) -> (z : a) -> Equality a x y -> Equality a y z -> Equality a x z
+trans a x x z (Refl a x) v = trans a x z z v (Refl a z)
+
+
+cong : (a : Type) -> (b : Type) -> (x : a) -> (y : a) -> (f : a -> b) -> Equality a x y -> Equality b (f x) (f y) 
+cong a b x x f (Refl a x) = Refl b (f x)
+
+
+appDU : (a : Type) -> (b : Type) -> (c : Type) -> (DU a b) -> (a -> c) -> (b -> c) -> c
+appDU a b c (DUinl a b el) f g = f (appDU Type Type a (DUinr Type Type c) (\x => el) (\x => el))
+appDU a b c (DUinr a b el) f g = g (appDU Type b b (DUinl Type b c) (\x => el) (\x => el))
+
+
+
+
+notNot : (a : Type) -> a -> not (not a)
+
+
+
+nnnN : (a : Type) -> not (not (not a)) -> not a
+nnnN a x = x
+
+------------------------------------------------------------------
+
+data EMPTY : Vect n a -> Type where
+  E : EMPTY VNil
+  NE : (EMPTY (VCons h t))
+    
+isEmpty'' : (v : Vect n a) -> EMPTY v
+isEmpty'' VNil = E
+isEmpty'' (VCons x y) = NE
+
+data ELEM :  a -> Vect n a -> Type where
+  Here  : ELEM x (VCons x xs)
+  Later : ELEM x ys -> ELEM x (VCons y xs)
+
+isElem'' :  (x : a) -> (xs : Vect n a) -> Maybe (ELEM x xs) 
+isElem'' x xs = Nothing
+
+duplicate'' : (xs : Vect n a) -> 
+ (DPair (Vect (n + n) a) 
+        (\ ys => Equality (Vect (n + n) a) ys (append' xs xs)))
+
+
+fsts : Vect n (Pair a b) -> Vect n a
+fsts VNil = VNil
+fsts (VCons (MkPair a b) y) = VCons a (fsts y)
+
+snds : Vect n (Pair a b) -> Vect n b
+snds VNil = VNil
+snds (VCons (MkPair a b) y) = VCons b (snds y)
+  
+zip'' : (as : Vect n a) -> (bs : Vect n b) -> 
+  (DPair (Vect n (Pair a b)) 
+         (\ ys => Pair (Equality (Vect n a) (fsts ys) as) 
+                       (Equality (Vect n b) (snds ys) bs)))
+
+lookupV : Nat -> Vect n a -> Maybe a
+lookupV Z x = Nothing
+lookupV (S k) x = lookupV k x
+
+ithElem'' : (xs : Vect n a) -> (m : Nat) -> 
+   Maybe (DPair a (\ x => Equality (Maybe a) (lookupV m xs) (Just x)) )
+
+
+index'' : (x : a) -> (xs : Vect n a) ->
+   Maybe (DPair Nat (\ m => Equality (Maybe a) (lookupV m xs) (Just x)) )
+
+
 
 

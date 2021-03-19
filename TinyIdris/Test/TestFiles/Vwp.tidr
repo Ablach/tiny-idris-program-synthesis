@@ -1,0 +1,99 @@
+data Nat : Type where
+  Z : Nat
+  S : Nat -> Nat
+
+data Bool : Type where
+ T : Bool
+ F : Bool
+
+ifte : (a : Type) -> Bool -> a -> a -> a
+pat a : Type, et : a, ef : a =>
+  ifte a T et ef = et
+pat a : Type, et : a, ef : a =>
+  ifte a F et ef = ef
+
+data Vec : Nat -> Type -> Type where
+  Nil : (a : Type) -> Vec Z a
+  Cons : (a : Type) -> (n : Nat) -> a -> Vec n a -> Vec (S n) a
+
+data Pair : Type -> Type -> Type where
+  MkPair : (a : Type) -> (b : Type) -> a -> b -> Pair a b
+
+data Maybe : Type -> Type where
+  Nothing : (a : Type) -> Maybe a
+  Just : (a : Type) -> a -> Maybe a
+
+data Le : Nat -> Nat -> Type where
+  zlen : (n : Nat) -> Le Z n
+  sles : (n : Nat) -> (m : Nat) -> (Le n m) -> Le (S n) (S m)
+
+add : Nat -> Nat -> Nat
+pat n =>
+  add Z n = n
+pat m : Nat, n : Nat =>
+  add (S m) n = S (add m n)
+
+minus : Nat -> Nat -> Nat
+pat n : Nat =>
+ minus Z n = n
+pat m : Nat =>
+ minus (S m) Z = Z
+pat m : Nat, n : Nat =>
+ minus (S m) (S n) = minus m n
+
+data DP : (a : Type) -> (a -> Type) -> Type where
+ MkDPair : (a : Type) -> (p : a -> Type) -> (e : a) ->
+		 (pf : p e) -> DP a p
+
+
+data EMPTY : (n : Nat) -> (a : Type) -> Vec n a -> Type where
+  E : (a : Type) -> EMPTY Z a (Nil a)
+  NE : (a : Type) -> (n : Nat) -> 
+	(h : a) -> (t : Vec n a) -> (EMPTY (S n) a (Cons a n h t))
+    
+isEmpty'' : (n : Nat) -> (a : Type) -> (v : Vec n a) -> EMPTY n a v
+
+data ELEM :  (a : Type) -> (n : Nat) -> a -> Vec n a -> Type where
+  Here  : (a : Type) -> (n : Nat) -> (x : a) -> (xs : Vec n a) ->
+		 ELEM a (S n) x (Cons a n x xs)
+  Later : (a : Type) -> (n : Nat) -> (x : a) -> (y : a) ->
+		(xs : Vec n a) -> ELEM a n x xs -> 
+		ELEM a (S n) x (Cons a n y xs)
+
+isElem'' : (a : Type) -> (n : Nat) -> (x : a) ->
+	 (xs : Vec n a) -> Maybe (ELEM a n x xs) 
+
+data Eq : (a : Type) -> a -> a -> Type where
+  refl : (a : Type) -> (x : a) -> Eq a x x
+
+
+append : (a : Type) -> (n : Nat) -> (m : Nat) -> 
+	 (xs : Vec n a) -> (ys : Vec m a) -> Vec (add n m) a
+
+duplicate'' : (a : Type) -> (n : Nat) -> (xs : Vec n a) -> 
+ (DP (Vec (add n n) a) (\ ys => Eq (Vec (add n n) a) ys (append a n n xs xs)))
+
+
+fsts : (a : Type) -> (b : Type) -> (n : Nat) -> Vec n (Pair a b) ->
+	 Vec n a
+
+snds :  (a : Type) -> (b : Type) -> (n : Nat) -> Vec n (Pair a b) ->
+	 Vec n b
+  
+zip'' : (a : Type) -> (b : Type) -> (n : Nat) ->
+	 (as : Vec n a) -> (bs : Vec n b) ->
+ (DP (Vec n (Pair a b)) (\ ys => Pair (Eq (Vec n a) (fsts a b n ys) as) 
+				      (Eq (Vec n b) (snds a b n ys) bs)))
+
+lookupV : (a : Type) -> (n : Nat) -> Nat -> Vec n a -> Maybe a
+
+
+
+ithElem'' : (a : Type) -> (n : Nat) -> (xs : Vec n a) -> (m : Nat) -> 
+ Maybe (DP a ( \ x =>  (Eq (Maybe a) (lookupV a n m xs) (Just a x))))
+
+
+index'' : (a : Type) -> (n  : Nat) -> (x : a) -> (xs : Vec n a) ->
+ Maybe (DP Nat (\ y => Eq (Maybe a) (lookupV a n y xs)  (Just a x)))
+
+

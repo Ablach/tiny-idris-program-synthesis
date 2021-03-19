@@ -1,5 +1,8 @@
 module tests where
 
+data _×_ : Set → Set → Set where
+ _,_ : ∀ {a b} → a → b → a × b
+
 data List a : Set where
  [] : {a} → List a
  _::_ : {a} → a → List a → List a
@@ -12,7 +15,7 @@ data Bool : Set where
  True : Bool
  False : Bool
 
-open import Data.Product
+
 open import Data.Maybe
  
 append : ∀ {a} -> (xs : List a) -> (ys : List a) -> List a
@@ -128,3 +131,103 @@ ltov (x :: ls) = Cons x (ltov ls)
 vtol : ∀ {a} {n} → Vect n a → List a
 vtol [] = {!!}
 vtol (Cons x v) = vtol v
+
+
+data Bot : Set where 
+
+record Σ (A : Set) (B : A → Set) : Set where
+  constructor _**_
+  field
+    fst : A
+    snd : B fst
+
+data DU : Set -> Set -> Set where
+  DUinl : (a : Set) -> (b : Set) -> (el : a) -> DU a b
+  DUinr : (a : Set) -> (b : Set) -> (el : b) -> DU a b
+
+data Equality : (a : Set) -> a -> a -> Set where
+ Refl : (a : Set) -> (e : a) -> Equality a e e
+
+botElim : ∀ {a} -> Bot -> a
+botElim v = {!!}
+
+not : Set -> Set
+not p = Bot
+
+plusComm : (n : Nat) -> (m : Nat) -> Equality Nat (n + m) (m + n)
+plusComm Z Z = Refl Nat Z
+plusComm Z (S m) = {!!}
+plusComm (S n) Z = {!!}
+plusComm (S n) (S m) = {!!}
+
+plusSuc : (n : Nat) -> (m : Nat) -> Equality Nat (n + (S m)) (S (n + m))
+plusSuc Z m = Refl Nat (S m)
+plusSuc (S k) Z = {!!}
+plusSuc (S k) (S j) = {!!}
+
+sym : (a : Set) -> (x : a) -> (y : a) -> Equality a x y -> Equality a y x
+sym a y y (Refl a y) = Refl a y
+
+trans : (a : Set) -> (x : a) -> (y : a) -> (z : a) -> Equality a x y -> Equality a y z -> Equality a x z
+trans a y y y (Refl a y) (Refl a y) = Refl a y
+
+cong : (a : Set) -> (b : Set) -> (x : a) -> (y : a) -> (f : a -> b) -> Equality a x y -> Equality b (f x) (f y) 
+cong a b y y f (Refl a y) = Refl b (f y)
+
+appDU : (a : Set) -> (b : Set) -> (c : Set) -> (DU a b) -> (a -> c) -> (b -> c) -> c
+appDU a b c (DUinl a b el) f g = g {!!}
+appDU a b c (DUinr a b el) f g = g el
+
+
+notNot : (a : Set) -> a -> not (not a)
+notNot a x = {!!}
+
+nnnN : (a : Set) -> not (not (not a)) -> not a
+nnnN a x = x
+
+data EMPTY : ∀ {n : Nat}{a : Set} → Vect n a -> Set where
+  E : EMPTY []
+  NE : ∀ {h} {t} → (EMPTY (Cons h t))
+    
+isEmpty'' : ∀ {n} {a} → (v : Vect n a) -> EMPTY v
+isEmpty'' [] = {!!}
+isEmpty'' (Cons x v) = {!!}
+
+data ELEM : ∀ {n} {a} → a -> Vect n a -> Set where
+  Here  : ∀ {x} {xs} → ELEM x (Cons x xs)
+  Later : ∀ {x y} {xs ys} → ELEM x ys -> ELEM x (Cons y xs)
+
+isElem'' : ∀ {n} {a} → (x : a) -> (xs : Vect n a) -> Maybe (ELEM x xs) 
+isElem'' x [] = {!!}
+isElem'' x (Cons x₁ xs) = {!!}
+
+{-
+duplicate'' : ∀ {n}{a} → (xs : Vect n a) -> Σ (Vect (n + n) a) (λ x → Equality (Vect (n + n) a) x (vappend xs xs))
+duplicate'' {n}{a} [] = [] ** Refl (Vect Z a) []
+duplicate'' {n}{a}(Cons x xs) = Cons x (vappend xs (Cons x xs)) **
+                            Refl (Vect (S (n + S n)) a) (Cons x (vappend xs (Cons x xs)))
+-}
+fsts : ∀ {n}{a}{b} → Vect n (a × b) -> Vect n a
+fsts [] = []
+fsts (Cons (a , b) y) = Cons a (fsts y)
+
+snds : ∀ {n}{a}{b} → Vect n (a × b) -> Vect n b
+snds [] = []
+snds (Cons (a , b) y) = Cons b (snds y)
+  
+zip'' : ∀ {n} {a} {b} → (as : Vect n a) -> (bs : Vect n b) ->
+  Σ (Vect n (a × b)) (λ x → (Equality (Vect n a) as (fsts x)) × (Equality (Vect n b) bs (snds x)))
+zip'' as bs = {!!}
+
+lookupV : ∀ {n}{a} → Nat -> Vect n a -> Maybe a
+lookupV Z x = nothing
+lookupV (S k) x = lookupV k x
+
+ithElem'' : ∀ {n}{a} → (xs : Vect n a) -> (m : Nat) -> Maybe (Σ a (λ x → Equality (Maybe a) (lookupV m xs) (just x)))
+ithElem'' [] m = nothing
+ithElem'' (Cons x xs) m = nothing
+
+index'' : ∀ {n}{a} → (x : a) -> (xs : Vect n a) -> Maybe (Σ Nat (λ y → Equality (Maybe a) (lookupV y xs) (just x)))
+index'' x [] = nothing
+index'' x (Cons x₁ xs) = nothing
+

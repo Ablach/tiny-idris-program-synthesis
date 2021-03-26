@@ -91,8 +91,7 @@ tryIfSuccessful s@(MkSearch (S depth) name env lhs target) n nty (NBind m (Pi nm
                | _ => none
               (r :: rs) <- tryIfSuccessful s n nty sc'
                | _ => none
-              pure $ map (\ z => App z tm) (r :: rs)
-
+              pure $ map (\ z => App z tm) (r :: rs)    
 tryIfSuccessful (MkSearch 0 name env lhs target) n nty tm = none 
 tryIfSuccessful (MkSearch depth name env lhs target) n nty tm 
   = do defs <- get Ctxt
@@ -105,7 +104,7 @@ tryIfSuccessful (MkSearch depth name env lhs target) n nty tm
             Bound => case defined n env of
                           Nothing => throw (GenericMsg "Bound not in env")
                           (Just (MkIsDefined p)) => pure $ [Local _ p]
-            _ => none
+            _ => pure $ [Ref nty n]
        
 
 structuralRecursionCheck : {vars :_} ->

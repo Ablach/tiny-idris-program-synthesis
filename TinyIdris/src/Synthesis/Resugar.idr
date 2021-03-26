@@ -61,7 +61,7 @@ resugarLam False (Just x) scope
 resugarApp : RawImp -> RawImp -> String
 resugarApp x a
   = let (f , as) = getFnArgs (IApp x a) in 
-        (resugar' f) ++ " " ++ (concat $ intersperse " " (map resugar' as))
+        (resugar' f) ++ " " ++ (concat $ intersperse " " (reverse $ map resugar' as))
   where getFnArgs : RawImp -> (RawImp , List (RawImp))
         getFnArgs (IApp z w) = let (f , args) = getFnArgs z in (f , (w :: args))
         getFnArgs fn = (fn , [])

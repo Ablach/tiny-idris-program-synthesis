@@ -91,7 +91,7 @@ tryIfSuccessful s@(MkSearch (S depth) name env lhs target) n nty (NBind m (Pi nm
                | _ => none
               (r :: rs) <- tryIfSuccessful s n nty sc'
                | _ => none
-              pure $ map (\ z => App z tm) (r :: rs)    
+              pure $ map (pushdown tm) (r :: rs)    
 tryIfSuccessful (MkSearch 0 name env lhs target) n nty tm = none 
 tryIfSuccessful (MkSearch depth name env lhs target) n nty tm 
   = do defs <- get Ctxt
@@ -221,6 +221,7 @@ synthesise s@(MkSearch (S k) name env lhs tm)
 
       let funcs : List (Name , Term []) = toList $ functions ust
       let fs = concat $ !(traverse (\ (fn, ft) => tryDef s fn Func ft) $ funcs)
+      if name == (UN "v92") then do traverse (log . show) fs ; pure () else pure ()
       --pure $ sortBy (sort s) (locals ++ cons ++ fs)
       pure $ (locals ++ cons ++ fs)
 

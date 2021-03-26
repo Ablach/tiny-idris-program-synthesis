@@ -1522,7 +1522,17 @@ attempted between the scope and the target in the same fashion outlined above.
 If unification fails then the branch is killed, otherwise the process is repeated for the 
 scope. If the term passed in is not a Pi binder then we have reached the end of the 
 arguments, with the resulting term unifying with the target type, at which point a
-Reference to the name of the definition being attempted is returned, to which the synthesised terms may be applied. 
+Reference to the name of the definition being attempted is returned, to which the synthesised terms may be applied. To ensure that arguments
+are applied in the correct order, they are pushed to the front of
+the application, as displayed in figure 5.
+
+\begin{center}
+\begin{figure}[htbp]
+\centering
+\includegraphics[scale=0.5]{./Resource/tis.png}
+\caption{Synthesising an application.}
+\end{figure}
+\end{center}
 
 \subsubsection{Structural Recursion Checking}
 \label{sec:orgb4d20b2}
@@ -2115,7 +2125,7 @@ batches using the \texttt{test} command, which takes no arguments.
 The system looks through the answer file, and for each name present,
 attempts to synthesise a term, and returns the output detailed above,
 the tool also returns a success rate over all the tests, an example
-output is displayed in figure 6.
+output is displayed in figure 7.
 
 \begin{center}
 \begin{figure}[htbp]
@@ -2154,50 +2164,54 @@ should be encountered by TinyIdris and Idris2.
 \subsection{Performance}
 \label{sec:org9ac3710}
 
-\subsubsection{Lists}
-\label{sec:org840f301}
 \begin{center}
-\begin{tabular}{lllll}
-Problem & TinyIdris & Idris & Idris2 & Agda\\
+  
+\begin{table}[!htbp]
+\begin{tabular}{|l|l|l|l|l|l|}
 \hline
-append &   &   & Pass &  \\
-map &   &   & Pass &  \\
-replicate &   &   & Pass &  \\
-drop &   &   &   &  \\
-foldr &   &   &   &  \\
-is empty &   &   &   &  \\
-is elem &   &   &   &  \\
-duplicate &   &   &   &  \\
-zip &   &   &   &  \\
-i'th elem &   &   &   &  \\
-index &   &   &   &  \\
-\end{tabular}
-\end{center}
-
-\subsubsection{Vectors}
-\label{sec:org20404d1}
-\begin{center}
-\begin{tabular}{lllll}
-Problem & TinyIdris & Idris & Idris2 & Agda\\
+Problem & TinyIdris & Idris & Idris2 & Agda & Synquid \\
 \hline
-append & Pass & Pass & Pass & Pass\\
-map &   & Pass & Pass & Pass\\
-replicate & Pass & Pass & Pass &  \\
-drop &   &   & Pass &  \\
-foldr &   &   &   &  \\
-is empty &   &   &   &  \\
-is elem &   &   &   &  \\
-duplicate & Pass &   &   &  \\
-zip &   & Pass & Pass &  \\
-i'th elem &   &   &   &  \\
-index &   &   &   &  \\
+append &   &   & Pass &  &  \\
+map &   &   & Pass &  & \\
+replicate &   &   & Pass &  & \\
+drop &   &   &   &  &   \\
+foldr &   &   &   & &  \\
+is empty &   &   &   &  & \\
+is elem &   &   &   & &  \\
+duplicate &   &   &   & &  \\
+zip &   &   &   & & \\
+i'th elem &   &   &   & & \\
+index &   &   &   & & \\
+\hline
 \end{tabular}
-\end{center}
+\caption{Lists}
+\end{table}
 
-\subsubsection{Vectors With Proofs}
-\label{sec:orge605b92}
-\begin{center}
-\begin{tabular}{lllll}
+
+\begin{table}[!htbp]
+\begin{tabular}{|l|l|l|l|l|l|}
+\hline
+Problem & TinyIdris & Idris & Idris2 & Agda & Synquid \\
+\hline
+append & Pass & Pass & Pass & Pass & Pass\\
+map & Pass  & Pass & Pass & Pass & Pass\\
+replicate & Pass & Pass & &   & Pass\\
+drop &   &   & Pass & Pass  & Pass\\
+foldr &   &   &   &   & Pass\\
+is empty &   &   &   &   & Pass\\
+is elem &   &   &   &   & Pass\\
+duplicate & Pass &   &   &   & Pass\\
+zip &   & Pass & Pass & Pass  & Pass\\
+i'th elem &   &   &   &   & Pass\\
+index &   &   &   &   & Pass\\
+\hline
+\end{tabular}
+\caption{Vectors}
+\end{table}
+
+\begin{table}[!htbp]
+\begin{tabular}{|l|l|l|l|l|}
+\hline
 Problem & TinyIdris & Idris & Idris2 & Agda\\
 \hline
 is empty & Pass &   & Pass &  \\
@@ -2206,27 +2220,31 @@ duplicate &   &   & Pass &  \\
 zip &   &   & Pass &  \\
 i'th elem &   &   &   &  \\
 index &   &   &   &  \\
+\hline
 \end{tabular}
-\end{center}
+\caption{Vectors with Proof}
+\end{table}
 
-\subsubsection{Equalities}
-\label{sec:org3daf245}
-
-\begin{center}
-\begin{tabular}{lllll}
+\begin{table}[!htbp]
+\begin{tabular}{|l|l|l|l|l|}
+\hline
 Problem & TinyIdris & Idris & Idris2 & Agda\\
 \hline
 plus commutes &   &   &   &  \\
 plus Suc &   &   &   &  \\
-symmetry &   & Pass & Pass &  \\
+symmetry &   & Pass & Pass & Pass \\
 transitivity &   & Pass & Pass & Pass\\
 congruence &   & Pass & Pass & Pass\\
 list(vec(list)) = list &   & Pass & Pass & Pass\\
 vec(list(list)) = vec &   &   & Pass &  \\
-disjoint union apply &   &   &   &  \\
+disjoint union apply &   &   &   & Pass \\
 a = not not a &   &   &   &  \\
-not not not a = not a &   &   & Pass &  \\
+not not not a = not a &   &   & Pass & Pass \\
+\hline
 \end{tabular}
+\caption{Equalities}
+\end{table}
+
 \end{center}
 
 \subsection{Evaluation of performance}

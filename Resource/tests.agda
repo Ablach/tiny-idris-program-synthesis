@@ -19,49 +19,48 @@ data Bool : Set where
 open import Data.Maybe
  
 append : ∀ {a} -> (xs : List a) -> (ys : List a) -> List a
-append [] ys = ys
-append (x :: xs) ys = ys
+append xs ys = ys
 
 mmap : ∀ {a}{b} -> (a -> b) -> List a -> List b
 mmap f [] = []
-mmap f (x :: xs) = mmap f xs
+mmap f (x :: x₁) = []
+
 
 lfoldr : ∀ {a}{b} -> (a -> b -> b) -> (acc : b) -> List a -> b
-lfoldr f acc [] = acc
-lfoldr f acc (x :: xs) = acc
+lfoldr f acc xs = acc
+
 
 replicate : ∀ {a} -> a -> Nat -> List a
-replicate x Z = []
-replicate x (S k) = replicate x k
+replicate x xs = []
+
 
 drop : ∀ {a} -> Nat -> (xs : List a) -> List a
-drop n [] = []
-drop n (x :: xs) = xs
+drop n xs = xs
+
 
 isEmpty : ∀ {a} -> List a -> Bool
-isEmpty [] = True
-isEmpty (x :: xs) = isEmpty xs
+isEmpty jj = True
+
 
 isElem : ∀ {a} -> a -> List a -> Bool
-isElem x [] = True
-isElem x (x₁ :: xs) = isElem x₁ xs
+isElem x xs = True
+
 
 duplicate : ∀ {a} -> List a -> List a
-duplicate [] = []
-duplicate (x :: xs) = xs
+duplicate i = i
+
 
 mzip : ∀ {a}{b} -> List a -> List b -> List (a × b)
-mzip [] ys = {!!}
-mzip (x :: xs) [] = []
-mzip (x :: xs) (x₁ :: ys) = mzip xs ys
+mzip [] [] = []
+mzip [] (x :: x₁) = []
+mzip (x :: x₁) ys = mzip x₁ ys
 
 ithElem : ∀ {a} -> List a -> Nat -> Maybe a
-ithElem [] n = nothing
-ithElem (x :: xs) n = ithElem xs n
+ithElem kk n = nothing
+
 
 index : ∀ {a} -> a -> List a -> Maybe Nat
-index x [] = nothing
-index x (x₁ :: xs) = index x₁ xs
+index x kk = nothing
 
 data Vect : Nat -> Set -> Set where
   [] : {a : Set} → Vect Z a
@@ -77,44 +76,46 @@ S a - Z = (S a)
 S a - S b = (a - b)
 
 vappend : ∀ {a}{n}{m} -> (xs : Vect n a) -> (ys : Vect m a) -> Vect (n + m) a
-vappend [] ys = ys
-vappend (Cons x xs) ys = Cons x (vappend xs ys)
+vappend {_} {Z} xs ys = ys
+vappend {_} {S x} (Cons x₁ x₂) ys = Cons x₁ (vappend x₂ ys)
 
 vmap : ∀ {a}{b}{n} -> (a -> b) -> Vect n a -> Vect n b
 vmap f [] = []
-vmap f (Cons x xs) = Cons (f x) (vmap f xs)
+vmap f (Cons x x₁) = Cons (f x) (vmap f x₁)
 
 vfoldr : ∀ {a}{b}{n} -> (a -> b -> b) -> (acc : b) -> Vect n a -> b
-vfoldr f acc [] = acc
-vfoldr f acc (Cons x xs) = acc
+vfoldr f acc xs = acc
 
 vreplicate : ∀ {a}{n} -> a -> (n : Nat) -> Vect n a
-vreplicate x Z = {!!}
-vreplicate x (S n) = {!!}
+vreplicate x n = {!-c!}
+
 
 vdrop : ∀ {a}{n} -> (m : Nat) -> (xs : Vect n a) -> Vect (n - m) a
 vdrop n [] = []
-vdrop n (Cons x xs) = {!!}
+vdrop Z (Cons x x₁) = Cons x x₁
+vdrop (S x) (Cons x₁ x₂) = vdrop x x₂
+
 
 visEmpty : ∀ {a}{n} -> Vect n a -> Bool
-visEmpty [] = True
-visEmpty (Cons x xs) = visEmpty xs
+visEmpty dd = True
 
-visElem : ∀ {a}{n} a -> Vect n a -> Bool
-visElem x [] = {!!}
-visElem x (Cons x₁ xs) = {!!}
+
+visElem : ∀ {a}{n} -> a -> Vect n a -> Bool
+visElem x dd = True
+
 
 vduplicate : ∀ {a}{n} -> Vect n a -> Vect (n + n) a
-vduplicate [] = []
-vduplicate (Cons x xs) = {!!}
+vduplicate xs = {!-c!}
+
 
 vzip : ∀ {a}{n}{b} -> Vect n a -> Vect n b -> Vect n (a × b)
-vzip [] y = []
-vzip (Cons x xs) y = {!!}
+vzip [] ys = []
+vzip (Cons x x₁) (Cons x₂ x₃) = Cons (x , x₂) (vzip x₁ x₃)
+
 
 vithElem : ∀ {a}{n} -> Vect n a -> Nat -> Maybe a
-vithElem [] n = nothing
-vithElem (Cons x xs) n = vithElem xs n
+vithElem xs b = nothing
+
 
 vindex : ∀ {a}{n} -> a -> Vect n a -> Maybe Nat
 vindex x [] = nothing
@@ -155,34 +156,29 @@ not : Set -> Set
 not p = Bot
 
 plusComm : (n : Nat) -> (m : Nat) -> Equality Nat (n + m) (m + n)
-plusComm Z Z = Refl Nat Z
-plusComm Z (S m) = {!!}
-plusComm (S n) Z = {!!}
-plusComm (S n) (S m) = {!!}
+plusComm n m = {!-c!}
 
 plusSuc : (n : Nat) -> (m : Nat) -> Equality Nat (n + (S m)) (S (n + m))
-plusSuc Z m = Refl Nat (S m)
-plusSuc (S k) Z = {!!}
-plusSuc (S k) (S j) = {!!}
+plusSuc n m = {!-c!}
 
 sym : (a : Set) -> (x : a) -> (y : a) -> Equality a x y -> Equality a y x
-sym a y y (Refl a y) = Refl a y
+sym a x .x (Refl .a .x) = Refl a x
 
 trans : (a : Set) -> (x : a) -> (y : a) -> (z : a) -> Equality a x y -> Equality a y z -> Equality a x z
-trans a y y y (Refl a y) (Refl a y) = Refl a y
+trans a x .x y (Refl .a .x) p' = p'
 
 cong : (a : Set) -> (b : Set) -> (x : a) -> (y : a) -> (f : a -> b) -> Equality a x y -> Equality b (f x) (f y) 
-cong a b y y f (Refl a y) = Refl b (f y)
+cong a b y .y p (Refl .a .y) = Refl b (p y)
 
 appDU : (a : Set) -> (b : Set) -> (c : Set) -> (DU a b) -> (a -> c) -> (b -> c) -> c
-appDU a b c (DUinl a b el) f g = g {!!}
-appDU a b c (DUinr a b el) f g = g el
+appDU a b c (DUinl .a .b el) f g = f el
+appDU a b c (DUinr .a .b el) f g = g el
 
 
 notNot : (a : Set) -> a -> not (not a)
-notNot a x = {!!}
+notNot a x = {!-c!}
 
-nnnN : (a : Set) -> not (not (not a)) -> not a
+nnnN : (a : Set) -> not a -> not (not (not a))
 nnnN a x = x
 
 data EMPTY : ∀ {n : Nat}{a : Set} → Vect n a -> Set where
@@ -190,16 +186,16 @@ data EMPTY : ∀ {n : Nat}{a : Set} → Vect n a -> Set where
   NE : ∀ {h} {t} → (EMPTY (Cons h t))
     
 isEmpty'' : ∀ {n} {a} → (v : Vect n a) -> EMPTY v
-isEmpty'' [] = {!!}
-isEmpty'' (Cons x v) = {!!}
+isEmpty'' k = {!-c!}
+
 
 data ELEM : ∀ {n} {a} → a -> Vect n a -> Set where
   Here  : ∀ {x} {xs} → ELEM x (Cons x xs)
   Later : ∀ {x y} {xs ys} → ELEM x ys -> ELEM x (Cons y xs)
 
 isElem'' : ∀ {n} {a} → (x : a) -> (xs : Vect n a) -> Maybe (ELEM x xs) 
-isElem'' x [] = {!!}
-isElem'' x (Cons x₁ xs) = {!!}
+isElem'' x xs = {!!}
+
 
 {-
 duplicate'' : ∀ {n}{a} → (xs : Vect n a) -> Σ (Vect (n + n) a) (λ x → Equality (Vect (n + n) a) x (vappend xs xs))
@@ -217,17 +213,17 @@ snds (Cons (a , b) y) = Cons b (snds y)
   
 zip'' : ∀ {n} {a} {b} → (as : Vect n a) -> (bs : Vect n b) ->
   Σ (Vect n (a × b)) (λ x → (Equality (Vect n a) as (fsts x)) × (Equality (Vect n b) bs (snds x)))
-zip'' as bs = {!!}
+zip'' as bs = {!-c!}
 
 lookupV : ∀ {n}{a} → Nat -> Vect n a -> Maybe a
-lookupV Z x = nothing
-lookupV (S k) x = lookupV k x
+lookupV xs x = nothing
+
 
 ithElem'' : ∀ {n}{a} → (xs : Vect n a) -> (m : Nat) -> Maybe (Σ a (λ x → Equality (Maybe a) (lookupV m xs) (just x)))
-ithElem'' [] m = nothing
-ithElem'' (Cons x xs) m = nothing
+ithElem'' n m = nothing
+
 
 index'' : ∀ {n}{a} → (x : a) -> (xs : Vect n a) -> Maybe (Σ Nat (λ y → Equality (Maybe a) (lookupV y xs) (just x)))
-index'' x [] = nothing
-index'' x (Cons x₁ xs) = nothing
+index'' x xs = nothing
+
 

@@ -59,6 +59,8 @@ modules = -- Core TT representations
           Utils.Octal,
           Utils.String,
 
+	  Synthesis.Search,
+	  Synthesis.Order,
 	  Synthesis.Synthesise,
 	  Synthesis.Unelab,
 	  Synthesis.Resugar, 

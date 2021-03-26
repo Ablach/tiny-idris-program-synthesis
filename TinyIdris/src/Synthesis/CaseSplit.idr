@@ -63,48 +63,14 @@ toPatVar : List Name -> RawImp -> RawImp
 toPatVar [] ri = ri
 toPatVar (n :: ns) ri = IPatvar n Implicit (toPatVar ns ri)
 
-getConPatterns :  {auto c : Ref Ctxt Defs} -> 
-                  {auto u : Ref UST UState} ->
-                  Nat -> Name -> 
-                  Core (RawImp, (RawImp -> RawImp))
-getConPatterns splits n
-   = do defs <- get Ctxt
-        Just def <- lookupDef n defs | _ => throw (NotInContext n)
-        let (DCon t a) = definition def | _ => throw (InvalidDefinition n)
-        ns <- genNames a splits
-        let ns' = map IVar ns
-        pure $ (apply (IVar n) ns' , toPatVar ns)
-
-
-export
-splitLhs : {auto c : Ref Ctxt Defs} -> 
-           {auto u : Ref UST UState} ->
-           Bool -> Nat -> RawImp ->
-           Core (List (RawImp, List Name))
-splitLhs in_split splits (IPatvar x ty scope)  
-  = do defs <- get Ctxt
-       let (IVar n) = getFn ty | _ => cont
-       Just def <- lookupDef n defs | _ => cont
-       let (TCon tag arity datas) = definition def | _ => cont
-       pats <- traverse (getConPatterns splits) datas
-       let finals = map (\ (fs, sn) => ((fixUpScope x scope fs) , sn)) pats
-       pure $ merge finals  
-   where 
-       cont : Core (List (RawImp, List Name)) 
-       cont = if in_split 
-                then pure []
-                else do (r :: rs) <- splitLhs in_split splits scope | _ => none
-                        pure $ map (\ (sc, ns) => ((IPatvar x ty sc), ns)) (r :: rs)
-splitLhs _ _ _ = none
-
-
 getData : {auto c : Ref Ctxt Defs} ->
           Name ->
           Core (Name, Term [], Int, Nat)
 getData n 
  = do defs <- get Ctxt
       Just def <- lookupDef n defs | _ => throw (NotInContext n)
-      let (DCon tag arity) = definition def | _ => throw (InvalidDefinition n)
+      let (DCon tag arity) = definition def 
+        | _ => throw (InvalidDefinition n)
       pure (n, (type def), tag, arity)
 
 
@@ -121,7 +87,8 @@ validCon val n env tyn tytag tyar tyargs (datan, datatm, datatag, dataar)
        !(nf defs env (rewrite sym (appendNilRightNeutral vars) 
                            in weakenNs vars datatm)) 
       res <- tryUnify env 
-       !(quote defs env filled) !(quote defs env (NTCon tyn tytag tyar tyargs))
+                      !(quote defs env filled)
+                      !(quote defs env (NTCon tyn tytag tyar tyargs))
       deleteMetas metas
       case res of
        Nothing => pure False
@@ -134,7 +101,9 @@ lookupTm : {vars : _} ->
            (Term (vars), Term vars') ->
            Maybe (RawImp)
 lookupTm n ((Local idx p), (Local idx' p'))
-  = if n == (nameAt idx p) then Just (IVar $ nameAt idx' p') else Nothing
+  = if n == (nameAt idx p)
+       then Just (IVar $ nameAt idx' p')
+       else Nothing
 lookupTm n ((App x z), (App x' z'))
   = lookupTm n (x,x') <|> lookupTm n (z,z')
 lookupTm n _ = Nothing
@@ -173,11 +142,14 @@ lookupClos ((c@(MkClosure x z tm), (MkClosure x' z' tm')) :: xs) n
 getSplitData : {vars : _} ->
                {auto c : Ref Ctxt Defs} ->
                {auto u : Ref UST UState} ->
-               NF vars -> Env Term vars -> List (Closure vars) -> NF vars ->
+               NF vars -> Env Term vars ->
+               List (Closure vars) -> NF vars ->
                Core (List (Closure vars, Closure vars), NF vars)
 getSplitData (NBind x y f) env cs og 
   = getSplitData !(f !(get Ctxt) 
-                  (toClosure env !(quote !(get Ctxt) env (binderType y))))
+                  (toClosure env !(quote !(get Ctxt) 
+                                         env 
+                                         (binderType y))))
                   env cs og
 getSplitData (NTCon x tag arity xs) env cs og 
   = pure (zip xs cs, og)
@@ -198,8 +170,14 @@ getRaw splits depth env rs dcn (cs, (NBind y z f)) =
           do nm <- genName $ "ic" ++ (show splits) ++ (show depth)  
              pure $
               IPatvar nm Implicit 
-                !(getRaw splits (S depth) env (IVar nm :: rs) dcn (cs, f'))
-         Just (x, clo@(MkClosure _ _ tm)) => getRaw splits depth env (x :: rs) dcn (cs, !(f defs clo))
+                !(getRaw splits
+                         (S depth)
+                         env
+                         (IVar nm :: rs)
+                         dcn
+                         (cs, f'))
+         Just (x, clo@(MkClosure _ _ tm)) =>
+           getRaw splits depth env (x :: rs) dcn (cs, !(f defs clo))
 getRaw splits depth env rs dcn (x, tm)
  = pure $ apply (IVar dcn) (reverse rs)
 
@@ -218,7 +196,8 @@ replaceImplicitAt n tm (IPatvar x Implicit scope)
   = if n == x 
        then IPatvar x (unelab tm) scope
        else IPatvar x Implicit (replaceImplicitAt n tm scope)
-replaceImplicitAt n tm (IPatvar x y scope) = IPatvar x y (replaceImplicitAt n tm scope)
+replaceImplicitAt n tm (IPatvar x y scope) 
+  = IPatvar x y (replaceImplicitAt n tm scope)
 replaceImplicitAt n tm ri = ri
 
 fillImplicits : {vars :_} ->
@@ -231,13 +210,11 @@ fillImplicits (IPatvar x Implicit scope) env ri
        let env' : Env Term (x :: vars)
                 = (Lam x Explicit tm :: env)
        fillImplicits scope env' ri
-       
 fillImplicits (IPatvar x ty scope) env ri
  = do (tm, gd) <- checkTerm env ty Nothing
       let env' : Env Term (x :: vars) 
                = (Lam x Explicit tm) :: env
       fillImplicits scope env' ri
-
 fillImplicits (IApp f a) env ri
  = do (ftm, gfty) <- checkTerm env f Nothing
       fty <- getNF gfty
@@ -279,9 +256,10 @@ getSplit splits val@(NBind x b sc) n env =
          raw <- getRaw splits 0 env [] name splitdata 
          pure $ Just $ splitPats raw
      else do defs <- get Ctxt 
-             getSplit splits !(sc defs 
-                                  (toClosure env 
-                                    !(quote defs env (binderType b)))) n env
+             getSplit splits 
+                      !(sc defs 
+                           (toClosure env 
+                           !(quote defs env (binderType b)))) n env
 getSplit splits tm n env = nothing
 
 splitOnN : RawImp -> Name -> (Maybe (RawImp -> RawImp), RawImp)
@@ -290,7 +268,8 @@ splitOnN (IPatvar x ty scope) n
        then (Nothing, scope)
        else case splitOnN scope n of 
                  (Nothing, z) => (Just (IPatvar x ty), z)
-                 ((Just y), z) => (Just (\ sc' => IPatvar x ty (y sc')), z)
+                 ((Just y), z) =>
+                    (Just (\ sc' => IPatvar x ty (y sc')), z)
 splitOnN tm n = (Nothing, tm)
 
 tpv : {vars : _} ->
@@ -299,7 +278,8 @@ tpv : {vars : _} ->
       Term vars -> Nat -> Nat -> RawImp -> Core RawImp
 tpv (Bind x y scope) n_in splits ri
   = do nm <- genName $ "x" ++ (show splits) ++ "_" ++ (show n_in)
-       pure $ IPatvar nm (unelab $ binderType y) !(tpv scope (S n_in) splits ri)
+       pure $ IPatvar nm (unelab $ binderType y)
+                        !(tpv scope (S n_in) splits ri)
 tpv tm n_in splits ri = pure ri
 
 getNonPats : {vars : _} ->
@@ -312,6 +292,41 @@ getNonPats ((Left (x, v)) :: xs) ((MkClosure y z w) :: ys)
 getNonPats ((Right (x,n)) :: xs) cs
   = (IVar n) :: getNonPats xs cs
 getNonPats _ _ = ?fdsgfdsds
+
+envToPat : {vars : _} ->
+           {auto c : Ref Ctxt Defs} ->
+           Env Term vars ->
+           RawImp -> RawImp
+envToPat [] r = r
+envToPat ((PVar x z) :: env) r = IPatvar x (unelab z) (envToPat env r)
+envToPat (_ :: env) r = ?ffff_4
+
+getConPatterns : {vars : _} ->
+                 {auto c : Ref Ctxt Defs} -> 
+                 {auto u : Ref UST UState} ->
+                 Nat -> RawImp -> Env Term vars ->
+                 List (Closure vars) -> Name -> 
+                 Name -> Core (RawImp, List Name)
+getConPatterns splits ri env cs name n
+   = do defs <- get Ctxt
+        Just def <- lookupDef n defs
+         | _ => throw (NotInContext n)
+        let (DCon t a) = definition def
+         | _ => throw (InvalidDefinition n)
+        norm <- nf defs env (rewrite sym (appendNilRightNeutral vars)
+                                  in weakenNs vars $ type def)
+        dst <- getSplitData norm env cs norm
+        raw <- getRaw splits 0 env [] n dst
+        let (pats, app) = splitPats raw 
+        let (front, back, names)
+           = case splitOnN ri name of
+                (Nothing, suf) => 
+                  ((envToPat env) . pats, fixUpScope name suf app)      
+                ((Just pre), suf) => 
+                  ((envToPat env) . pre . pats, fixUpScope name suf app)
+        newtm <- fillImplicits (front back) [] (front back) 
+        pure (newtm, names) 
+
 
 export
 splitSingles : {auto c : Ref Ctxt Defs} -> 
@@ -331,11 +346,46 @@ splitSingles splits (tm,(n :: ns))
                (tm , gd) <- checkTerm [] (IPatvar x ty scope) Nothing
                norm <- nf defs [] tm
                Just (pats, app) <- getSplit splits norm n [] | _ => none
-               let (Just pre, suf) = splitOnN (IPatvar x ty scope) n | _ => none
+               let (Just pre, suf) = splitOnN (IPatvar x ty scope) n
+                 | _ => none
                let front = pre . pats 
                    (newsc, names) = fixUpScope n suf app
                newtm <- fillImplicits (front newsc) [] (front newsc) 
                pure [(newtm, names)] 
         splitSingle _ _ = none
+
+
+        
+export
+splitLhs : {vars : _} ->
+           {auto c : Ref Ctxt Defs} -> 
+           {auto u : Ref UST UState} ->
+           Bool -> Nat -> Env Term vars -> RawImp -> 
+           Core (List RawImp)
+splitLhs in_split splits env (IPatvar x ty scope)
+  = do defs <- get Ctxt
+       (tm , gtm) <- checkTerm env ty Nothing  
+       let (IVar n) = getFn ty | _ => cont x tm
+       Just def <- lookupDef n defs | _ => cont x tm 
+       let (TCon tag arity datas) = definition def | _ => cont x tm
+       (NTCon _ _ _ cs) <- nf defs env tm
+         | _ => throw (GenericMsg "TCon not normalising to NTCon")
+       spt <- traverse 
+            (getConPatterns splits (IPatvar x ty scope) env cs x) datas
+       finals <- traverse (splitSingles (S splits)) spt
+       pure $ concat finals
+   where 
+     cont : Name -> Term vars -> Core (List RawImp)
+     cont x tm = if in_split 
+                     then pure []
+                     else 
+                      splitLhs {vars = (x :: vars)}
+                               in_split
+                               splits
+                               (PVar x tm :: env)
+                               scope
+
+
+splitLhs _ _ _ _ = none
 
 

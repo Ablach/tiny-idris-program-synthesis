@@ -69,7 +69,7 @@ showT IType = log "ty"
 export
 filterCheckable : {auto c : Ref Ctxt Defs} -> 
                   {auto u : Ref UST UState} ->
-                  List (RawImp, b) -> Core (List (Term [], Glued [], RawImp, b))
+                  List (RawImp, List Name) -> Core (List (Term [], Glued [], RawImp, List Name))
 filterCheckable [] = pure []
 filterCheckable ((x, b) :: xs) =
   do newRef EFail False

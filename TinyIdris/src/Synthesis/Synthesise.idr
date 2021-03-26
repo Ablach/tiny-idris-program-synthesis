@@ -19,21 +19,14 @@ import Synthesis.Unelab
 import Synthesis.Resugar
 import Synthesis.Util
 import Synthesis.CaseSplit
+import Synthesis.Order
+import Synthesis.Search
 
 import Data.List
 import Data.Nat
 import Data.Maybe
 import Data.Either
 import Data.SortedMap
-
--- Exists purely to clean up type signatures
-record Search (vars : List Name) where
- constructor MkSearch
- depth : Nat
- name : Name
- env : Env Term vars
- lhs : RawImp
- target : Term vars 
 
 synthesise : {vars : _} -> 
              {auto c : Ref Ctxt Defs} -> 
@@ -71,7 +64,6 @@ getClause ((MkSearch depth name env lhs target), rt, lt)
   getLhs tm = tm
 
 
-
 tryIfSuccessful : {vars :_} ->
                   {auto c : Ref Ctxt Defs} ->
                   {auto u : Ref UST UState} ->
@@ -81,10 +73,15 @@ tryIfSuccessful : {vars :_} ->
 tryIfSuccessful s@(MkSearch (S depth) name env lhs target) n nty (NBind m (Pi nm pinfo tm) sc)
   = do defs <- get Ctxt
        (tm' :: ts) <- synthesise (MkSearch (pred depth) m env lhs !(quote defs env tm))
-        | _ => none
-       results <- traverse help (tm' :: ts)
-       pure $ concat results
-  where help : Term vars ->
+        | _ => none 
+       pure $ concat !(traverse help (tm' :: ts))
+       
+  where pushdown : Term vars -> Term vars -> Term vars
+        pushdown tm (Ref nty n) = App (Ref nty n) tm
+        pushdown tm (App f a) = App (pushdown tm f) a
+        pushdown tm f = App f tm
+      
+        help : Term vars ->
                Core (List (Term vars))
         help tm
          = do defs <- get Ctxt
@@ -92,19 +89,24 @@ tryIfSuccessful s@(MkSearch (S depth) name env lhs target) n nty (NBind m (Pi nm
               (filled , fas) <- fillMetas env sc'
               Just ures <- tryUnify env target !(quote defs env filled)
                | _ => none
-              
               (r :: rs) <- tryIfSuccessful s n nty sc'
                | _ => none
               pure $ map (\ z => App z tm) (r :: rs)
-tryIfSuccessful (MkSearch 0 name env lhs target) n nty tm = none
+
+tryIfSuccessful (MkSearch 0 name env lhs target) n nty tm = none 
 tryIfSuccessful (MkSearch depth name env lhs target) n nty tm 
   = do defs <- get Ctxt
-       --log $ "trying " ++ (show target) ++ " and " ++ (show !(quote defs env tm))
-       Just (MkUnifyResult [] holesSolved) <- tryUnify env target !(quote defs env tm)
-        | _ => none  
- --      if holesSolved then log $ "holes solved" else log "no holes solved"
-       --showCons constraints
-       pure [Ref nty n]
+       Just (MkUnifyResult [] holesSolved) <- tryUnify 
+                                                     env 
+                                                     target
+                                                     !(quote defs env tm)
+        | _ => none 
+       case nty of
+            Bound => case defined n env of
+                          Nothing => throw (GenericMsg "Bound not in env")
+                          (Just (MkIsDefined p)) => pure $ [Local _ p]
+            _ => none
+       
 
 structuralRecursionCheck : {vars :_} ->
                            {auto c : Ref Ctxt Defs} ->
@@ -113,9 +115,11 @@ structuralRecursionCheck : {vars :_} ->
                            Core Bool
 structuralRecursionCheck env lhs rhs
  = do let tm = getScope lhs
-          (IVar fn, args) = getArgs tm | _ => throw (GenericMsg "Shouldn't happen")
+          (IVar fn, args) = getArgs tm
+           | _ => throw (GenericMsg "Shouldn't happen")
           tm' = unelab rhs
-          (IVar fn', args') = getArgs tm' | _ => throw (GenericMsg "Shouldn't happen")
+          (IVar fn', args') = getArgs tm'
+           | _ => throw (GenericMsg "Shouldn't happen")
       -- return true if they are different
       pure $ if fn == fn' 
                 then checkArgs args (reverse args')
@@ -134,10 +138,12 @@ structuralRecursionCheck env lhs rhs
        nameIn n _ = True
 
        checkArgs : List RawImp -> List RawImp -> Bool
-       checkArgs ls ((IVar x) :: rs) = case filter (nameIn x) ls of
-                                            [] => True
-                                            (y :: xs) => checkArgs ls rs
-       checkArgs ls ((IApp x y) :: rs) = checkArgs ls [x] || checkArgs ls [y]
+       checkArgs ls ((IVar x) :: rs)
+         = case filter (nameIn x) ls of
+             [] => True
+             (y :: xs) => checkArgs ls rs
+       checkArgs ls ((IApp x y) :: rs) 
+        = checkArgs ls [x] || checkArgs ls [y]
        checkArgs ls (_ :: rs) = checkArgs ls rs
        -- we have reached the end and none have been different
        checkArgs ls [] = False
@@ -151,14 +157,14 @@ tryDef : {vars : _} ->
          Term [] -> Core (List (Term vars))
 tryDef s@(MkSearch depth name env lhs target) n nty tm 
  = do defs <- get Ctxt 
-      norm <- nf defs env (rewrite sym (appendNilRightNeutral vars) in weakenNs vars tm)
+      norm <- nf defs env (rewrite sym (appendNilRightNeutral vars) 
+                                in weakenNs vars tm)
       (ntm , args) <- fillMetas env norm
-      
       qtm <- quote defs env ntm
       Just cs <- tryUnify env target qtm
-        | _ => none
-     
+        | _ => none     
       tryIfSuccessful s n nty norm
+
       
 tryLocals : {vars : _} -> 
             {auto c : Ref Ctxt Defs} -> 
@@ -167,32 +173,33 @@ tryLocals : {vars : _} ->
             (usable : List (Term vars)) ->
             Core (List (Term vars))
 tryLocals s@(MkSearch (S depth) name env lhs target) (l@(Local idx p) :: usable)
- = case !(tryUnify env target (binderType $ getBinder p env)) of 
+    = case !(tryUnify env target (binderType $ getBinder p env)) of 
         Just (MkUnifyResult [] holesSolved) => 
-           do --  log $ "found " ++ (resugar $ unelab env (Local idx p)) ++ " for " ++ (show target)
               pure (Local idx p :: !(tryLocals s usable))
         _ => case (binderType $ getBinder p env) of 
                   fn@(Bind x (Pi y z w) scope) => 
-                     do defs <- get Ctxt
-                        (filled, metas) <- fillMetas env !(nf defs env fn)
-                        
-                        Just ures <- tryUnify env target !(quote defs env filled)
-                          | _ => tryLocals s usable
-                        pure $ !(tryIfSuccessful s (nameAt idx p) Bound filled) ++ !(tryLocals s usable)
+                   do defs <- get Ctxt
+                      (filled, metas) <- fillMetas env 
+                                                   !(nf defs env fn)
+                      Just ures <- tryUnify env 
+                                            target
+                                            !(quote defs env filled)
+                        | _ => tryLocals s usable   
+                      pure $
+                       !(tryIfSuccessful s (nameAt idx p) Bound !(nf defs env fn))
+                         ++ !(tryLocals s usable)
                   _ => tryLocals s usable
 tryLocals s@(MkSearch Z name env lhs target) (l@(Local idx p) :: usable)
- = case !(tryUnify env target (binderType $ getBinder p env)) of 
+    = case !(tryUnify env target (binderType $ getBinder p env)) of 
         Just (MkUnifyResult [] holesSolved) => 
-           do --  log $ "found " ++ (resugar $ unelab env (Local idx p)) ++ " for " ++ (show target)
               pure (Local idx p :: !(tryLocals s usable))
         _ => tryLocals s usable
 tryLocals _ _ = none
 
 
-
-synthesise (MkSearch depth name env lhs (Bind n (Pi n' pinfo tm) scope)) 
- = pure $ map (Bind n (Lam n' pinfo tm))
-              !(synthesise (MkSearch depth n (Lam n' pinfo tm :: env) lhs scope))
+synthesise s@(MkSearch depth name env lhs (Bind n (Pi n' pinfo tm) scope)) 
+ = pure $ !(tryLocals s (getUsableEnv [] env)) ++ (map (Bind n (Lam n' pinfo tm))
+              !(synthesise (MkSearch depth n (Lam n' pinfo tm :: env) lhs scope)))
 synthesise s@(MkSearch d name env lhs TType) 
   = pure $ !(tryLocals s (getUsableEnv [] env)) 
 synthesise s@(MkSearch 0 name env lhs tm)
@@ -212,9 +219,11 @@ synthesise s@(MkSearch (S k) name env lhs tm)
                                                 let (DCon t a) = definition d | _ => none
                                                 tryDef s x (DataCon t a) (type d)) datacons) 
                 _ => none
+
       let funcs : List (Name , Term []) = toList $ functions ust
       let fs = concat $ !(traverse (\ (fn, ft) => tryDef s fn Func ft) $ funcs)
-      pure (locals ++ cons ++ fs)
+      --pure $ sortBy (sort s) (locals ++ cons ++ fs)
+      pure $ (locals ++ cons ++ fs)
 
 synthesiseWorlds : {auto c : Ref Ctxt Defs} -> 
                    {auto u : Ref UST UState} -> 
@@ -266,13 +275,14 @@ defSearch : {auto c : Ref Ctxt Defs} ->
         GlobalDef -> Name -> List RawImp -> Nat ->
         Core (Maybe (Def, List (Clause, RawImp, RawImp)))
 defSearch def n lhs splits = 
-  do cs@(c :: cases) <- traverse (splitLhs False splits) lhs | _ => pure Nothing
-     gs@(p :: ps) <- filterCheckable (concat cs) | _ => pure Nothing
-     let gs' = concat !(traverse (splitSingles (S splits)) (map (\ (_,_,a) => a) gs)) 
-     gs''@(p' :: ps') <- filterCheckable (map (\ g => (g,())) gs') | _ => nothing
+  do cs@(c :: cases) <- traverse (\ l => splitLhs False splits [] l) lhs 
+      | _ => pure Nothing
+     gs@(p :: ps) <- filterCheckable (map (\ a => (a,[])) (concat cs))
+      | _ => pure Nothing
      Just res <- synthesisePM n (type def)
-                  !(traverse (\ (_,gd,ri,_) => pure $ getSearchData !(getTerm gd) [] ri) gs'')
-      | _ => defSearch def n (map (\ (_,_,ri,_) => ri) gs'') (S splits) 
+                  !(traverse (\ (_,gd,ri,_) => 
+                           pure $ getSearchData !(getTerm gd) [] ri) gs)
+      | _ => defSearch def n (map (\ (_,_,ri,_) => ri) gs) (S splits) 
      pure $ Just res
 
 
@@ -286,12 +296,16 @@ run n = do Just def <- lookupDef n !(get Ctxt)
            case definition def of
                None =>
                   case !(defSearch def n [getLhs (type def) n []] 0) of
-                    Just (res, clauses) => pure $ resugarType clauses n $ unelab (type def)
+                    Just (res, clauses) => 
+                      pure $ resugarType clauses n $ unelab (type def)
                     Nothing  => pure "No match"
                (MetaVar vars env retTy) => 
-                do let Just lhs = lookup n (userholes ust) | _ => pure "Missing hole"
-                   rs <- synthesise (MkSearch 4 n env lhs retTy)                        
-                   (r :: rs') <- filterM (structuralRecursionCheck env lhs) rs
+                do let Just lhs = lookup n (userholes ust)
+                     | _ => pure "Missing hole"
+                   rs <- synthesise (MkSearch 4 n env lhs retTy) 
+                   (r :: rs') <- filterM 
+                                  (structuralRecursionCheck env lhs)
+                                  rs
                     | _ => pure "No match"
                    -- here we want to add in some heuristic for sorting
                    pure $ resugar $ unelab r

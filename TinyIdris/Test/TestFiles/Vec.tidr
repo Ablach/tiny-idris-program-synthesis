@@ -37,10 +37,7 @@ append : (a : Type) -> (n : Nat) -> (m : Nat) ->
 	 (xs : Vec n a) -> (ys : Vec m a) -> Vec (add n m) a
 
 map : (a : Type) -> (b : Type) -> (n : Nat) -> (f : (a -> b)) -> (xs : Vec n a) -> Vec n b
-pat a : Type, b : Type, f : ((e : a) -> b) => 
-	map a b Z f (Nil a) = ?v01
-pat a : Type, b : Type, n : Nat, f : ((e : a) -> b), x : a, xs : Vec n a => 
-	map a b (S n) f (Cons a n x xs) = ?v02
+
 replicate : (a : Type) -> (x : a) -> (n : Nat) -> Vec n a
 
 minus : Nat -> Nat -> Nat

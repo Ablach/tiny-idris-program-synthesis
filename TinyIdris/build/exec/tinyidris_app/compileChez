@@ -1,1 +1,0 @@
-(parameterize ([optimize-level 3] [compile-file-message #f]) (compile-program "/home/scott/408/TinyIdris/build/exec/tinyidris_app/tinyidris.ss"))

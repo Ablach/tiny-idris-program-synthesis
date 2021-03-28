@@ -1,9 +1,0 @@
-\begin{Verbatim}[commandchars=\\\{\}]
-\PYG{k+kr}{data} \PYG{k+kt}{Vector} \PYG{o+ow}{:} \PYG{k+kt}{Nat} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{Type} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{Type} \PYG{k+kr}{where}
-  \PYG{n+nf}{Nil}  \PYG{o+ow}{:} \PYG{k+kt}{Vector} \PYG{k+kt}{Z} a
-  \PYG{o+ow}{(::)} \PYG{o+ow}{:} \PYG{o+ow}{\PYGZob{}}a \PYG{o+ow}{:} \PYG{k+kt}{Type}\PYG{o+ow}{\PYGZcb{}} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} a \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{Vector} n a \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{Vector} \PYG{o+ow}{(}\PYG{k+kt}{S} n\PYG{o+ow}{)} a
-
-\PYG{n+nf}{map} \PYG{o+ow}{:} \PYG{o+ow}{(}f \PYG{o+ow}{:} a \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} b\PYG{o+ow}{)} \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{Vector} n a \PYG{o+ow}{\PYGZhy{}\PYGZgt{}} \PYG{k+kt}{Vector} n b
-map f \PYG{o+ow}{[]} \PYG{o+ow}{=} \PYG{o+ow}{[]}
-map f \PYG{o+ow}{(}x \PYG{o+ow}{::} y\PYG{o+ow}{)} \PYG{o+ow}{=} f x \PYG{o+ow}{::} map f y
-\end{Verbatim}

@@ -1,5 +1,0 @@
-\begin{Verbatim}[commandchars=\\\{\}]
-\PYG{k+kr}{record} \PYG{k+kt}{Core} t \PYG{k+kr}{where}
-  constructor \PYG{k+kt}{MkCore}
-  \PYG{n+nf}{runCore} \PYG{o+ow}{:} \PYG{k+kt}{IO} \PYG{o+ow}{(}\PYG{k+kt}{Either} \PYG{k+kt}{Error} t\PYG{o+ow}{)}
-\end{Verbatim}

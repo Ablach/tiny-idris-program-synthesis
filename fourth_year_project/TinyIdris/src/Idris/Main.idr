@@ -120,7 +120,7 @@ main = do [_, fname] <- getArgs
           Right decls <- parseFile fname (do p <- prog fname; eoi; pure p)
               | Left err => printLn err  
           Right answers <- parseAnswers (getAnswerFile fname)
-              | Left err => printLn (getAnswerFile fname)
+              | Left err => printLn $ "Could not read answer file " ++ (getAnswerFile fname)
           coreRun (runMain decls answers)
                   (\err => printLn err)
                   pure

@@ -2440,12 +2440,17 @@ scheme and operating system the first command may change to
 
 The system can be accessed from Github \href{https://github.com/Ablach/tiny-idris-program-synthesis}. The tool is built using the command
 \texttt{idris2 --install tinyidris.ipkg} while in the TinyIdris
-directory. TinyIdris can be run using the \texttt{tinyidris}
-executable located in the \texttt{build/exec} directory, and passing
-the name of a '.tidr' test file. Test files are located within the \texttt{TinyIdris/Test/TestFiles} directory. If a new TinyIdris source file is created, then it
-should be stored within the \texttt{TinyIdris/Test/TestFiles}
+directory. 
+
+TinyIdris can be run using calling the tinyidris executable 
+from the `TinyIdris` directory using command `./build/exec/tinyidris`, and passing
+the name of a `.tidr` test file. 
+Test files are located within the `TinyIdris/Test/TestFiles` directory, since the paths are 
+relative the executable must be called from the `TinyIdris` directory.
+If a new TinyIdris source file is created, then it
+should be stored within the `TinyIdris/Test/TestFiles`
 directory, and an answer file of the same name created in the
-\texttt{TinyIdris/Test/AnswerFiles} directory using the extension \texttt{.ans}.
+`TinyIdris/Test/AnswerFiles` directory using the extension `.ans`.
 The answer file may be left blank. 
 
 While in the TinyIdris repl tree 4 commands may be issued. To evaluate

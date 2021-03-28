@@ -20,9 +20,11 @@ The system can be accessed from Github https://github.com/Ablach/tiny-idris-prog
 directory. 
 
 ## Usage
-TinyIdris can be run using the `tinyidris`
-executable located in the `build/exec` directory, and passing
-the name of a `.tidr` test file. Test files are located within the `TinyIdris/Test/TestFiles` directory.
+TinyIdris can be run using calling the tinyidris executable 
+from the `TinyIdris` directory using command `./build/exec/tinyidris`, and passing
+the name of a `.tidr` test file. 
+Test files are located within the `TinyIdris/Test/TestFiles` directory, since the paths are 
+relative the executable must be called from the `TinyIdris` directory.
 If a new TinyIdris source file is created, then it
 should be stored within the `TinyIdris/Test/TestFiles`
 directory, and an answer file of the same name created in the

@@ -15,6 +15,16 @@ data Bool : Set where
  True : Bool
  False : Bool
 
+×-Sym : ∀ {a b} → a × b → b × a
+×-Sym (x , x₁) = x₁ , x
+
+data _∨_ : Set → Set → Set where
+  inl : ∀ {a b} → a → a ∨ b
+  inr : ∀ {a b} → b → a ∨ b
+
+∨-Sym : ∀ {a b} → a ∨ b → b ∨ a
+∨-Sym (inl x) = inr x
+∨-Sym (inr x) = inl x
 
 open import Data.Maybe
  

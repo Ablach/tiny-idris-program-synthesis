@@ -50,6 +50,24 @@ Except where explicitly stated all the work in this report, including appendices
 \tableofcontents
 \clearpage
 
+\thispagestyle{empty}
+    \null\vspace{\stretch {1}}
+        \begin{center}
+          I am extremely grateful to Fredrik Nordvall Forsberg, of
+          the University of Strathclyde for his guidance,
+          patience, and support throughout this project.\\
+\vspace{10mm}
+          I am also greatful to Edwin Brady of St. Andrews University
+          for creating many useful resources making this project possible. \\
+\vspace{10mm}
+          Many thanks to Fredrik Lindblad, Marcin Benke, Etienne Kneuss, Viktor Kuncak,
+          Ivan Kuraj, Philippe Suter, Armando Solar-Lezama and Nadia Polikarpova,
+          who's previous work has inspired this project. 
+        \end{center}
+\vspace{\stretch{2}}\null
+\clearpage
+
+
 \section{Introduction}
 \label{sec:orgf1aad56}
 
@@ -2079,7 +2097,7 @@ will return the correct output.
 The test suite has been split into multiple categories, 
 each testing a specific purpose. Each individual test 
 has been selected from the test suite used to evaluate 
-Agsy or that used to evaluate the tool Synquid.
+Agsy, Agda's auto search tool, or that used to evaluate the Synquid system.
 
 
 \begin{itemize}
@@ -2090,12 +2108,12 @@ Agsy or that used to evaluate the tool Synquid.
 \end{itemize}
 
 The test suite has been designed to test the tool with varying
-amounts of type information. As the level of type information
+levels of type information. As the level of type information
 increases, the number of possible incorrect definitions decreases,
 however the definitions themselves become more challenging for the
 system to synthesise.
 
-The list tests will be used to evaluate effectiveness of the
+The list tests will indicate the effectiveness of the
 tools ability to synthesise terms without relying on detailed
 type information. Vectors will contain the same examples as lists,
 with the added type information of the length built in, it is expected that
@@ -2104,7 +2122,7 @@ detailed type information. Where the added type information present in
 vectors is not enough for a successful attempt, more type information is added
 to reduce the number of possible terms. Where applicable definitions will be
 attempted, returning not only the result but a proof that the result satisfies
-some property defining it' correctness. 
+some property defining it's correctness. 
 
 Testing Equalities focuses on the effectiveness of pattern matching
 as the results will result from information from equality proofs provided
@@ -2113,19 +2131,23 @@ as arguments.
 
 \subsection{Testing Functionality}
 
-To test the success of the tool, the TinyIdris system has been extended with two ways of testing the system on individual terms
-where answers are present. 
+Tests may be carried out manually, by calling the tool and inspecting the
+result, alternatively the tool has been extended with functionallity
+allowing tests to be carried out individually or in batches, using a
+predefined answer file. These modes of operation are only available
+when testing individual terms, and not full pattern matching definitions.
 
-Testing of individual holes can be carried out using the 
+Testing of an individual hole can be carried out using the 
 command \texttt{t} followed by the name of the hole. The system
-will run the algorithm and test the results against an answer from
-the answer file, the printout will return the hole name, expected result,
-actual result and pass/fail. Alternatively holes can be synthesised in 
-batches using the \texttt{test} command, which takes no arguments.
-The system looks through the answer file, and for each name present,
-attempts to synthesise a term, and returns the output detailed above,
-the tool also returns a success rate over all the tests, an example
-output is displayed in figure 7.
+will run the tool and compare the output string to that in the answer file.
+The tool returns a printout, containing the hole name, expected result,
+actual result and pass/fail.
+
+
+The command \texttt{test} can be used to test an entire file. The command takes no arguments,
+instead attempting to synthesise a term for each name found in the answer file. 
+For each name, the tool returns the printout as above along with a success rate over all
+the tests, an example output is displayed in figure 7.
 
 \begin{center}
 \begin{figure}[htbp]
@@ -2139,34 +2161,40 @@ output is displayed in figure 7.
 \subsection{Testing Plan}
 
 To test the tools, each test has been converted into TinyIdris,
-Idris, and Agda. To ensure that each tool has the same level
-of information available to it, no tests use built in libraries,
-instead opting to create exactly the same contexts for each.
-Although many of the tests came from that the test suite used on
-Synquid, the systems are different, and Synquid requires extra
-information for synthesis, thus the results are not directly
-comparable to the other systems.
+Idris, Idris2, Agda and Synquid. To ensure that each tool has the same level
+of information available to it, all data types and functions have been created
+within the test files, ensuring no information from built in libraries may be used.
 
+Although care has been taken to ensure the consistency of available information,
+fundemental differences between the languages do occur. Each tool being tested
+operates on a language that supports dependent types with the exception of Synquid, which
+instead uses `Liquid refinement types'. Where applicable, tests have been converted to the
+different type system, however, this is not possible for all tests. Where tests are not
+able to be expressed within the Synquid system, the results contain the character `-'.
 
-Idris2 and TinyIdris both support generating
-pattern matching definitions. Testing of these systems
-were both attempted only on generating full definitions.
-Neither Idris nor Agda support generating pattern matching
-definitions, attempts were initially made before case splitting,
-if both tools failed then the tests were repeated after
-case splitting, the splits were done manually,
-in the order most likely to present a result. This should not
-provide any advantage to the two systems, since all valid splits
-should be encountered by TinyIdris and Idris2.
+Similarly, with the exception of Idris, each system supports synthesis of
+pattern matching definitions. When testing was carried out on the Idris
+system, tests were first attempted without manual case splitting,
+where the tool failed, tests were repeated after manual
+case splitting. Splitting was carried in the order most likely to
+present a result, since each systems process for case splitting may be different.
+This manual splitting should not provide any advantage to Idris as with enough
+splits every other system has the opportunity to learn the information provided by
+the case split. 
 
-\clearpage
+When evaluating the perfomance, we begin by looking at the tools results in isolation,
+and follow up with a comparison to other systems, along with potential enhancements
+to the system.
 
 \subsection{Performance}
 \label{sec:org9ac3710}
 
+Failed tests within the following table are expressed as an empty space,
+success is represented by `Pass', and tests not expressible within a
+certain language is denoted by `-'.
+ 
+\begin{table}[!htb]
 \begin{center}
-  
-\begin{table}[!htbp]
 \begin{tabular}{|l|l|l|l|l|l|}
 \hline
 Problem & TinyIdris & Idris & Idris2 & Agda & Synquid \\
@@ -2185,10 +2213,12 @@ index &   &   &   & & \\
 \hline
 \end{tabular}
 \caption{Lists}
+\end{center}
 \end{table}
 
 
-\begin{table}[!htbp]
+\begin{table}[!htb]
+  \begin{center}
 \begin{tabular}{|l|l|l|l|l|l|}
 \hline
 Problem & TinyIdris & Idris & Idris2 & Agda & Synquid \\
@@ -2207,9 +2237,11 @@ index &   &   &   &   & Pass\\
 \hline
 \end{tabular}
 \caption{Vectors}
+\end{center}
 \end{table}
 
-\begin{table}[!htbp]
+\begin{table}[!htb]
+  \begin{center}
 \begin{tabular}{|l|l|l|l|l|}
 \hline
 Problem & TinyIdris & Idris & Idris2 & Agda\\
@@ -2223,151 +2255,173 @@ index &   &   &   &  \\
 \hline
 \end{tabular}
 \caption{Vectors with Proof}
+\end{center}
 \end{table}
 
-\begin{table}[!htbp]
-\begin{tabular}{|l|l|l|l|l|}
+\begin{table}[!htb]
+  \begin{center}
+\begin{tabular}{|l|l|l|l|l|l|}
 \hline
-Problem & TinyIdris & Idris & Idris2 & Agda\\
+Problem & TinyIdris & Idris & Idris2 & Agda & Synquid\\
 \hline
-plus commutes &   &   &   &  \\
-plus Suc &   &   &   &  \\
-symmetry &   & Pass & Pass & Pass \\
-transitivity &   & Pass & Pass & Pass\\
-congruence &   & Pass & Pass & Pass\\
-list(vec(list)) = list &   & Pass & Pass & Pass\\
-vec(list(list)) = vec &   &   & Pass &  \\
-disjoint union apply &   &   &   & Pass \\
-a = not not a &   &   &   &  \\
-not not not a = not a &   &   & Pass & Pass \\
+andSymmetric & Pass & Pass & Pass & Pass & Pass \\
+orSymmetric &  Pass & Pass & Pass & Pass & Pass \\
+plus commutes &   &   &   & & - \\
+plus Suc &   &   &   &  & - \\
+symmetry &   & Pass & Pass & Pass & \\
+transitivity &   & Pass & Pass & Pass & \\
+congruence &   & Pass & Pass & Pass & - \\
+list(vec(list)) = list &   & Pass & Pass & Pass & - \\
+vec(list(list)) = vec &   &   & Pass &  & - \\
+disjoint union apply &   &   &   & Pass & Pass \\
+a = not not a &   &   &   &  & -\\
+not not not a = not a &   &   & Pass & Pass & - \\
 \hline
 \end{tabular}
 \caption{Equalities}
-\end{table}
-
 \end{center}
+\end{table}
 
 \subsection{Evaluation of performance}
 \label{sec:org4c9aa94}
-The overall performance of the system while testing 
-the lists was poor, unable to synthesise any of the 
-test cases, this was the expected outcome, since
-there is a lack of type information to adequately cut out 
-many of the incorrect results, with no results being correctly 
-synthesised. 
+
+As displayed in table 1, on lists, the overall perfomance
+was very poor, with the tool beign unable to synthesise
+any of test cases. This was the expected outcome, since there
+is a lack of information available within the types of
+each function to cut out many of the invalid results,
+which each system returned. 
 
 With the added information available with vectors the tool was 
-able to perform better, correctly synthesising 3 of the test cases,
-somewhat surprisingly, it was unable to synthesise certain functions
-such as 'map', which seems not unlike other examples that it was able 
-to synthesise. Certain failed results from the vector test set result
-from the the ordering heuristic, which does not take into account the
-likelihood of recursion, and that the heuristic may be different
-when synthesising arguments for terms and synthesising the top level
-term itself.
+able to perform better, as seen in Table 2, it was able to correctly
+synthesise 4 of the test cases. Closer inspection of the results displayed that tools
+handling of constraints hindered it from synthesising certain definitions,
+for example, when attemtping to synthesise the recursive case for the
+drop function, \texttt{drop a (S n) (S m) (Cons a n x xs)} the tool
+would reject the correct answer, \texttt{drop a n m xs}, as it
+contained no guarantee that \textit{(S n) - (S m) = n - m}. This
+result suggests that when synthesising recursive definitions, the
+tool should take into account the inductive hypothesis when
+accepting or rejecting terms, as opposed to relying solely on the
+built in type system.
 
-Further inspection of the tools output confirms that indeed, for some
-functions, such as \textit{drop}, the correct definition was
-synthesised, however the ordering heuristic did not place it in the
-top place. 
-
-When provided with extra  type information the algorithm performed
+When provided with extra type information the algorithm performed
 worse, unable to synthesise terms that previously it was able to.
-In certain cases it is clear that when provided with a possibility
-that can be trivially constructed, then this will be the favoured
-result. Again, this may be a result of the ordering heuristic.
-While the extra type information reduces the number of correct 
-synthesisable terms, it also increases the difficulty of the 
-searches, increasing the number of constraints that must be satisfied. 
+In certain cases it's clear that when provided with the possibility
+of constructing a base case term, this will be the favoured
+result. This partially results from the ordering heuristic, which simply
+selects the first result generated, however it is clear that the system
+was unable to deal with the added complexity of generating proofs of
+correctness. 
 
-In the event that the tool ran for longer than 1 minute, the
-test was stopped, and the result considered a fail. In many of
-the types that may be generated by way of many different
-functions, the tool required longer than this time limit, this suggests
-that a depth alone is not sufficient, with the tool timing out after
-a certain time limit, returning any results that have been successfully
-generated. 
+The Equality set was designed to test the systems ability to use
+information gained from case splitting, as the only valid right hand side
+terms rely on it. The tools failure to synthesise the majority of these terms
+identifies that the tool is not able to effectively generate and utiliese
+type information generated from case splits. The issue with generating new infomation
+may lay with the less sophisticated type system found within TinyIdris, this issue
+presents itself via the lack of support for implicit arguments, which prevents the
+tool from fully utilising the information available to it by failing to generate
+constraints. The tool however, makes no attempt to solve constraints manually,
+therefore it may miss information that it does have available to it.
 
-TinyIdris uses normalisation by evaluation, this, combined with the
-explicitness of all arguments, impacts the results
-produced by the tool. In certain cases, it was able to synthesise
-unexpected, however correct results, for example when synthesising a
-\texttt{Vect (add n m) a}, the tool passed \texttt{add m n} as the
-length. This displays the tool is able to see relationships, making
-some of the failed results surprising.
+Another major drawback of the tool displayed by the tests is efficiency.
+The approach of enumerating the context runs in exponential time, meaning as
+the number of functions definied in any given context, the time of execution
+drastically increases, with the process, upon failed attempts, repeatedly
+running out of resources. For successful definitions, the time required also
+varied, from under 2 seconds to over 30 for the same function definition. 
 
 \subsection{Comparison to other systems}
 \label{sec:orga2f8b7e}
-The results, when compared to the two older systems, Idris and Agda, 
-performed comparably, with the exception of the Equalities tests,
-where both clearly outperformed the tool. The tests used self defined
-data types, to remove any advantage the other systems would have by
-accessing any information available in the libraries. This may go some
-way towards explaining the relatively poor performance of Agsy during
-the Equalities section, as it relies on built in tactics.
-The Equalities test were designed to test the
-tools ability to gain new information via case splitting, the failure
-suggests that the tool is either unable to effectively generate new
-information, or is not effectively utilising it. This may result from
-the less sophisticated type system present in the TinyIdris language.
 
-In other test suites, Idris and Agsy were able to synthesise terms,
-such as map, that the TinyIdris tool was not able to, this suggests
-that the tool is unable to cope with the added complexity of using
-higher order functions, this could result from the depth cutting off
-the search, or suggests a deficiency in the way the tool synthesises
-function application.
-
-The tool was outperformed in each section by the Idris2 system,
+With the excepton of the Equality test set, the tool performed somewhat
+comparably to both Idris and Agsy, with the notable difference in efficiency,
+with the existing tools synthesising definitions in under 1 second each.
+However, the tool was outperformed in each section by the Idris2 system,
 given the similarities within the systems this suggests that the
 ordering heuristic used in the Idris2 system is superior, and that
-recursive functions should be prioritised over using any function
-from the context.
+recursive functions definitions should be prioritised over attempting each
+function from the context.
 
-The test cases used in the first three sections came from the testing
-used in the Synquid system, the although the languages and type systems
-are not comparable, the overwhelming difference in performance between
-Synquid and each of the systems tests suggests that the use of
-refinement types and an SMT solver is superior than using dependent
-types for synthesis. Definitions in Synquid can be verbose, with
-certain information required for successful synthesis. This problem is
-present within the TinyIdris system also, as specifying complex
-properties often becomes cumbersome, and can be vastly more difficult
-than defining the functions themselves. While this has benefits for
-program correctness, it limits the usefulness of any program synthesis
-functionality. Unlike Synquid, the TinyIdris language has no concept of
-case splitting outside of pattern matching,
-meaning the system is unable to operate differently based on the result
-of any recursive calls or function applications. This severely limits
-the effectiveness of synthesis to mostly synthesising trivial cases,
-that have no element of choice. While the other systems have it
-available it is not used, this suggests that encoding the idea of
-choice into any synthesis tool may lead to greatly improved success
-rates.
+The comparison to Synquid presents some interesting conclusions.
+The overwhelming performance difference in the Vectors section  
+displays the power of using refinement types and an SMT solver
+within synthesis applications. Many of the examples used to test
+the Synquid system by the creators are extremely difficult to
+express using dependent types, resulting in extremely large and
+inefficient definitions, the reverse is also true as many of the
+tests are not expressible only using refinement types. This suggests
+that some combination of the approaches may lead to a more powerful
+tool. 
 
+\subsection{Changing Heuristic}
+The greater perfomance of the Idris2 system suggested the heuristic used
+could provide better results. An initial attempt was used, with the same
+heuristic used in the Idris2 system, which takes the term that uses the
+the most arguments passed in on the left hand side, not counting arguments
+that are used multiple times. Since the Idris2 system does not attempt
+synthesis using functions, instead focusing on recursive calls, therefore
+testing was also carried out prioritising recursive calls, and only
+sorting functions. 
+
+\begin{table}[!htb]
+  \begin{center}
+\begin{tabular}{|l|l|l|l|l|}
+\hline
+Problem & Loc -> DCon -> Func & Max Args & Rec + Max Arg & Sort Func Only\\
+\hline
+append & Pass & Pass & Pass & Pass\\
+map & Pass  & & & Pass\\
+replicate & Pass & & & Pass\\
+drop &   & & & \\
+foldr &   & & & \\
+is empty &   & & & \\
+is elem &   &  & & \\
+duplicate & Pass & Pass & Pass & Pass\\
+zip &   & & & \\
+i'th elem &  & & & \\ 
+index &   &  & & \\
+\hline
+\end{tabular}
+\caption{Comparing heuristics}
+\end{center}
+\end{table}
+
+As table 6 shows the inclusion of heuristics was detrimental to the
+perfomance of the tool. The exclusion of ordering local variables
+and data constructors from the final test suggests this is due to
+the correct answers being data constructors, and therefore prioritising
+them is benificial, since the tool is unable to synthesise other definitions
+which do not rely on this pattern. The poor perfomance of the differing
+heuristics suggests the performance issue requires a more sophisticated tool
+than is currently implemented, allowing the tool to synthesise a greater
+veriety of definitions, which may then be ordered. 
 
 \subsection{Conclusions}
-It is clear that further experimentation with the results of the
-tool is required, in order to fully understand what caused the poor
-results, including experimentation with different ordering heuristics,
-attempting to synthesise multiple pattern matching definitions and
-attempting to find out if the inferior type system found in TinyIdris
-may have an affect on the results. The tool could be improved through
-extending the language with more features, additionally,
-experimentation should be carried out on a more fully featured system.
-Implementing synthesis using any function that results in a valid type
-proved not to be a fruitful approach, however, synthesis using
-global function definitions, and attempting case splits could lead to
-improvements in the presence of built in heuristics guiding the
-algorithm to choose sensible functions to attempt.
+When compared to recent systems, it is clear that the tool suffers as it is
+unable to effectively utilise type information to refine the search space,
+which results in slow perfomance and potentially correct definitions being
+discounted as not enough information is available. It is clear that the tool
+requires improvement when synthesising arguments for definitions by refining
+terms based on new information generated with each successive argument. It is
+clear that using any function definition is an inefficient way to approach the
+problem, instead it could be benificial to use functionality such as case
+expressions and the with abstraction that are not present in the TinyIdris
+language to increase the number of synthesisable terms, without dramatically
+increasing the search space, for example, allowing functions to perform a recursive call,
+and operate in a certain way based on the result. The power displayed by Synquid's
+type system suggests that an extension of the type system to allow refinements that
+may be passed to a satisfiability solver could also greatly increase the potential
+for synthesis without placing a large burdon on the programmer to carefully design
+data types.
+
+
 \nocite{*}
 \bibliography{Report}  
 \clearpage
 
-\label{sec:org30d868f}
-\clearpage
-
-\section{Appendix C - User Guide and Maintenance}
+\section{Appendix A - User Guide and Maintenance}
 
 The system is built using the Idris2 programming language, due to
 a lack of backwards comparability the required version is

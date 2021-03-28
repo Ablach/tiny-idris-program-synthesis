@@ -1,6 +1,6 @@
-* TinyIdris Program Synthesis
+# TinyIdris Program Synthesis
 
-** Installation
+## Installation
 The system is built using the Idris2 programming language, due to
 a lack of backwards comparability the required version is
 \texttt{0.2.1} which can be located from the Idris2 GitHub,
@@ -19,7 +19,7 @@ The system can be accessed from Github \href{https://github.com/Ablach/tiny-idri
 \texttt{idris2 --install tinyidris.ipkg} while in the TinyIdris
 directory. 
 
-** Usage
+## Usage
 TinyIdris can be run using the \texttt{tinyidris}
 executable located in the \texttt{build/exec} directory, and passing
 the name of a '.tidr' test file. Test files are located within the \texttt{/Test/TestFiles} directory.

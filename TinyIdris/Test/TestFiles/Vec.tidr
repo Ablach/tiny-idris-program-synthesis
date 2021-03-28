@@ -50,8 +50,6 @@ pat m : Nat, n : Nat =>
 
 drop : (a : Type) -> (n : Nat) -> (m : Nat) -> (xs : Vec n a) -> Vec (minus n m) a
 
-foldr : (a : Type) -> (n : Nat) -> (b : Type) -> (f : (aa : a) -> (ab : b) -> b) -> (acc : b) -> (xs : Vec n a) -> b
-
 isEmpty : (a : Type) -> (n : Nat) -> (xs : Vec n a) -> Bool
 
 isElem : (a : Type) -> (n : Nat) -> (x : a) -> (xs : Vec n a) -> Bool
@@ -63,3 +61,4 @@ zip : (a : Type) -> (n : Nat) -> (b : Type) -> (xs : Vec n a) -> (ys : Vec n b) 
 ithElem : (a : Type) -> (n : Nat) -> (m : Nat) -> (Le m n) -> (xs : Vec n a) -> a
 
 index : (a : Type) -> (n : Nat)-> (x : a) -> (xs : Vec n a) -> Maybe Nat
+ 

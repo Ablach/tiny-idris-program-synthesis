@@ -105,7 +105,7 @@ tryIfSuccessful (MkSearch depth name env lhs target) n nty tm
                           Nothing => throw (GenericMsg "Bound not in env")
                           (Just (MkIsDefined p)) => pure $ [Local _ p]
             _ => pure $ [Ref nty n]
-       
+
 
 structuralRecursionCheck : {vars :_} ->
                            {auto c : Ref Ctxt Defs} ->
@@ -221,8 +221,6 @@ synthesise s@(MkSearch (S k) name env lhs tm)
 
       let funcs : List (Name , Term []) = toList $ functions ust
       let fs = concat $ !(traverse (\ (fn, ft) => tryDef s fn Func ft) $ funcs)
-      if name == (UN "v92") then do traverse (log . show) fs ; pure () else pure ()
-      --pure $ sortBy (sort s) (locals ++ cons ++ fs)
       pure $ (locals ++ cons ++ fs)
 
 synthesiseWorlds : {auto c : Ref Ctxt Defs} -> 
@@ -306,9 +304,16 @@ run n = do Just def <- lookupDef n !(get Ctxt)
                    (r :: rs') <- filterM 
                                   (structuralRecursionCheck env lhs)
                                   rs
-                    | _ => pure "No match"
+                    | _ => pure "No match" 
+                   (r'' :: rs'') <- filterM (\ t => case !(tryUnify env t retTy) of
+                                                      Just ures =>
+                                                       case constraints ures of
+                                                            [] => pure True
+                                                            _  => pure False
+                                                      Nothing => pure False) (r :: rs')
+                        | _ => pure "No Match"
                    -- here we want to add in some heuristic for sorting
-                   pure $ resugar $ unelab r
+                   pure $ resugar $ unelab r''
                _ => pure "Invalid definition"
 
 

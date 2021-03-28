@@ -1,0 +1,22 @@
+id  : (a : Type) -> a -> a
+
+app : (a : Type) -> (b : Type) -> (f : a -> b) -> a -> b
+
+data And : Type -> Type -> Type where
+  A : (a : Type) -> (b : Type) -> a -> b -> And a b
+
+data Or : Type -> Type -> Type where
+  inL : (a : Type) -> (b : Type) -> a -> Or a b
+  inR : (a : Type) -> (b : Type) -> b -> Or a b
+
+pairSym : (a : Type) -> (b : Type) -> And a b -> And b a
+
+andAssoc : (a : Type) -> (b : Type) -> (c : Type) ->
+		And (And a b) c -> And a (And b c)
+
+orSym : (a : Type) -> (b : Type) -> Or a b -> Or b a
+
+orAssoc : (a : Type) -> (b : Type) -> (c : Type) -> 
+		Or a (Or b c) -> Or (Or a b) c
+
+

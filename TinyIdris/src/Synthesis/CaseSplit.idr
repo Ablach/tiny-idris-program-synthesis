@@ -1,3 +1,12 @@
+{-
+Module: Synthesis.CaseSplit 
+Author: Scott Mora
+Last Modified: 27.03.2021
+Summary: This module provides functionality for 
+generating pattern matchin definitions when 
+proivided with a term to split, and environment in 
+which it should be split. 
+-}
 module Synthesis.CaseSplit 
 
 import Core.Context
@@ -23,18 +32,11 @@ import Synthesis.Util
 import Synthesis.Resugar
 import Synthesis.Unelab
 
-merge : List ((a, ns) , a -> b) -> List (b, ns)
-merge = map (\ ((fs, ns), sn) => (sn fs, ns)) 
-
-fus : Name -> RawImp -> RawImp -> (RawImp, Bool)
-fus n (IVar y) rep 
- = if n == y then (rep, True) else (IVar y, False)
-fus n (IApp y z) rep = let (f, inf) = fus n y rep
-                           (a, ina) = fus n z rep in
-                       (IApp f a, inf || ina)
-fus n tm rep = (tm, False)
-
-
+{-
+FixUpScope: Traverses a given RawImp 
+term, replacing each occurance of a given 
+name with a replacement term, 
+-}
 fixUpScope : Name ->
              (scope : RawImp) ->
              (replacement : RawImp) ->
@@ -48,21 +50,22 @@ fixUpScope n (IPatvar y z w) rep
        (sc, rest) = fixUpScope n w rep
        rest' = if b then (y :: rest) else rest in 
    (IPatvar y tm sc, rest')
+   where
+      fus : Name -> RawImp -> RawImp -> (RawImp, Bool)
+      fus n (IVar y) rep 
+       = if n == y then (rep, True) else (IVar y, False)
+      fus n (IApp y z) rep = let (f, inf) = fus n y rep
+                                 (a, ina) = fus n z rep in
+                             (IApp f a, inf || ina)
+      fus n tm rep = (tm, False)
 fixUpScope n tm rep = (tm, [])
 
-genNames : {auto c : Ref Ctxt Defs} -> 
-           {auto u : Ref UST UState} ->
-           Nat -> Nat -> Core (List Name)
-genNames Z splits = none
-genNames (S k) splits 
-  = do nm <- genName $ "x" ++ (show splits) ++ (show (S k))
-       ns <- genNames k splits
-       pure (nm :: ns)
 
-toPatVar : List Name -> RawImp -> RawImp
-toPatVar [] ri = ri
-toPatVar (n :: ns) ri = IPatvar n Implicit (toPatVar ns ri)
-
+{-
+getData: Looks up the definition of a 
+given data constructor name, 
+returning the name, type, tag and arity.
+-}
 getData : {auto c : Ref Ctxt Defs} ->
           Name ->
           Core (Name, Term [], Int, Nat)
@@ -74,6 +77,11 @@ getData n
       pure (n, (type def), tag, arity)
 
 
+{-
+validCon: Checks if a given data constructor 
+unifies with a given return type, returning 
+a boolean success value. 
+-}
 validCon : {vars : _} ->
            {auto c : Ref Ctxt Defs} ->
            {auto u : Ref UST UState} ->
@@ -94,7 +102,17 @@ validCon val n env tyn tytag tyar tyargs (datan, datatm, datatag, dataar)
        Nothing => pure False
        Just _ => pure True
 
+{-
+The following three functions check whether 
+a given name is present within list 
+of closures, paired with an accompanying closure.
+If the name is found, a term from the paired 
+closure is returned.
 
+This is used when attermpting to fill in any 
+arguments to a data constructor whos value 
+is present within the resulting type. 
+-}
 lookupTm : {vars : _} ->
            {vars' : _} ->
            Name ->
@@ -139,6 +157,13 @@ lookupClos ((c@(MkClosure x z tm), (MkClosure x' z' tm')) :: xs) n
             Nothing => lookupClos xs n
             (Just y) => Just (y, c)
            
+{-
+getSplitData:  generates a list of 
+closure x closure pairs from a given 
+data constructor, and a list of 
+closures passed in.
+-}
+
 getSplitData : {vars : _} ->
                {auto c : Ref Ctxt Defs} ->
                {auto u : Ref UST UState} ->
@@ -155,6 +180,19 @@ getSplitData (NTCon x tag arity xs) env cs og
   = pure (zip xs cs, og)
 getSplitData tm env cs og = pure ([], og)
 
+
+{-
+getRaw: When provided with a data constructor 
+term, generate pattern variables taking in 
+each argument that is not currently known, 
+and the application of the constructor to 
+all of it's required arguments.
+
+
+splits and depth naturals are used for 
+constructing unique names for each 
+argument generated.
+-}
 getRaw : {vars :_} -> 
          {auto c : Ref Ctxt Defs} -> 
          {auto u : Ref UST UState} ->
@@ -181,13 +219,24 @@ getRaw splits depth env rs dcn (cs, (NBind y z f)) =
 getRaw splits depth env rs dcn (x, tm)
  = pure $ apply (IVar dcn) (reverse rs)
 
-
+{-
+splitPats: Given a RawImp term, split it into two 
+sections, the pattern variables, and the resulting 
+application.
+-}
 splitPats : RawImp -> ((RawImp -> RawImp), RawImp)
 splitPats (IPatvar x ty scope)
   = let (pats, ret) = splitPats scope in
         ((\ z => IPatvar x ty (pats z)), ret)
 splitPats tm = (id, tm)
 
+{-
+The following two functions are used to fill
+in all implicit arguments with their 
+expected type, where possible. Operates 
+as a stripped down elabouration, replacing 
+any implicits for which we have a value. 
+-}
 replaceImplicitAt : {vars :_} -> 
                     {auto c : Ref Ctxt Defs} -> 
                     {auto u : Ref UST UState} ->
@@ -232,6 +281,13 @@ fillImplicits (IApp f a) env ri
        t => throw (GenericMsg "Not a function type")
 fillImplicits tm env ri = pure ri
       
+
+{-
+getSplit: Tests if a given type constructor 
+can be constructed by only one valid data 
+constructor, performing a split if this is 
+the case.                                   
+-}
 getSplit : {vars : _} -> 
            {auto c : Ref Ctxt Defs} ->
            {auto u : Ref UST UState} ->
@@ -262,6 +318,12 @@ getSplit splits val@(NBind x b sc) n env =
                            !(quote defs env (binderType b)))) n env
 getSplit splits tm n env = nothing
 
+{-
+splitOnN: Given a name and a term, if the name is 
+present within the terms patterns, split 
+the term into the patterns occuring before
+the name, and everything that comes after. 
+-}
 splitOnN : RawImp -> Name -> (Maybe (RawImp -> RawImp), RawImp)
 splitOnN (IPatvar x ty scope) n 
   = if x == n 
@@ -272,35 +334,65 @@ splitOnN (IPatvar x ty scope) n
                     (Just (\ sc' => IPatvar x ty (y sc')), z)
 splitOnN tm n = (Nothing, tm)
 
-tpv : {vars : _} ->
-      {auto c : Ref Ctxt Defs} -> 
-      {auto u : Ref UST UState} ->
-      Term vars -> Nat -> Nat -> RawImp -> Core RawImp
-tpv (Bind x y scope) n_in splits ri
-  = do nm <- genName $ "x" ++ (show splits) ++ "_" ++ (show n_in)
-       pure $ IPatvar nm (unelab $ binderType y)
-                        !(tpv scope (S n_in) splits ri)
-tpv tm n_in splits ri = pure ri
 
-getNonPats : {vars : _} ->
-             {auto c : Ref Ctxt Defs} ->
-             List (Either (Nat, Name) ((RawImp -> RawImp), Name)) ->
-             List (Closure vars) -> List RawImp
-getNonPats [] cs = []
-getNonPats ((Left (x, v)) :: xs) ((MkClosure y z w) :: ys)
-  = (unelab w) :: getNonPats xs ys
-getNonPats ((Right (x,n)) :: xs) cs
-  = (IVar n) :: getNonPats xs cs
-getNonPats _ _ = ?fdsgfdsds
+{-
+envToPat: Given an environment filled by pattern variables, 
+construct a RawImp term taking in those variables. 
 
+Environents generated will always only contain pattern 
+variables, therefore the impossible state will never 
+be reached. 
+-}
 envToPat : {vars : _} ->
            {auto c : Ref Ctxt Defs} ->
            Env Term vars ->
            RawImp -> RawImp
 envToPat [] r = r
-envToPat ((PVar x z) :: env) r = IPatvar x (unelab z) (envToPat env r)
-envToPat (_ :: env) r = ?ffff_4
+envToPat ((PVar x z) :: env) r = envToPat env $ IPatvar x (unelab z) r 
+envToPat (_ :: env) r = ?impossible_state
 
+
+
+{-
+splitSingles: Given a left hand side term and a name, 
+test if any names can be split into an individual 
+data constructor, carrying out the split if so. 
+
+Any names that depend on successful splits are 
+added to the list, the process repeats until the 
+list is empty.
+-}
+splitSingles : {auto c : Ref Ctxt Defs} -> 
+               {auto u : Ref UST UState} ->
+               Nat -> (RawImp, List Name) -> 
+               Core (List RawImp)
+splitSingles splits (tm,[]) = pure [tm]
+splitSingles splits (tm,(n :: ns)) 
+  = do upd <- splitSingle tm n 
+       [(_,_,updated, newnames)] <- filterCheckable upd
+         | _ => splitSingles splits (tm, ns)
+       splitSingles (S splits) (updated, ns ++ newnames)
+  where  
+        splitSingle : RawImp -> Name -> Core (List (RawImp, List Name))
+        splitSingle (IPatvar x ty scope) n
+          = do defs <- get Ctxt
+               (tm , gd) <- checkTerm [] (IPatvar x ty scope) Nothing
+               norm <- nf defs [] tm
+               Just (pats, app) <- getSplit splits norm n [] | _ => none
+               let (Just pre, suf) = splitOnN (IPatvar x ty scope) n
+                 | _ => none
+               let front = pre . pats 
+                   (newsc, names) = fixUpScope n suf app
+               newtm <- fillImplicits (front newsc) [] (front newsc) 
+               pure [(newtm, names)] 
+        splitSingle _ _ = none
+
+{-
+getConPatterns: Given a name, term and data constructor
+replace get the required patterns, replace each occurance
+of the name with the new term, and merge the results with 
+the initial term.
+-}
 getConPatterns : {vars : _} ->
                  {auto c : Ref Ctxt Defs} -> 
                  {auto u : Ref UST UState} ->
@@ -327,34 +419,13 @@ getConPatterns splits ri env cs name n
         newtm <- fillImplicits (front back) [] (front back) 
         pure (newtm, names) 
 
-
-export
-splitSingles : {auto c : Ref Ctxt Defs} -> 
-               {auto u : Ref UST UState} ->
-               Nat -> (RawImp, List Name) -> 
-               Core (List RawImp)
-splitSingles splits (tm,[]) = pure [tm]
-splitSingles splits (tm,(n :: ns)) 
-  = do upd <- splitSingle tm n 
-       [(_,_,updated, newnames)] <- filterCheckable upd
-         | _ => splitSingles splits (tm, ns)
-       splitSingles (S splits) (updated, ns ++ newnames)
-  where  
-        splitSingle : RawImp -> Name -> Core (List (RawImp, List Name))
-        splitSingle (IPatvar x ty scope) n
-          = do defs <- get Ctxt
-               (tm , gd) <- checkTerm [] (IPatvar x ty scope) Nothing
-               norm <- nf defs [] tm
-               Just (pats, app) <- getSplit splits norm n [] | _ => none
-               let (Just pre, suf) = splitOnN (IPatvar x ty scope) n
-                 | _ => none
-               let front = pre . pats 
-                   (newsc, names) = fixUpScope n suf app
-               newtm <- fillImplicits (front newsc) [] (front newsc) 
-               pure [(newtm, names)] 
-        splitSingle _ _ = none
-
-
+{-
+splitLhs: Interaction point of the module,
+given a name, term and environment, split 
+the first possible term, if this forces 
+any other splits, perform them. Returns 
+the list of new left hand sides.
+-}
         
 export
 splitLhs : {vars : _} ->
@@ -384,8 +455,6 @@ splitLhs in_split splits env (IPatvar x ty scope)
                                splits
                                (PVar x tm :: env)
                                scope
-
-
 splitLhs _ _ _ _ = none
 
 

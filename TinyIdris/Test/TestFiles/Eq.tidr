@@ -37,6 +37,17 @@ pat a : Type =>
 pat a : Type, n : Nat, x : a, xs : Vec n a =>
   vecToList a (S n) (VCons a n x xs) = Cons a x (vecToList a n xs)
 
+data And : Type -> Type -> Type where
+  A : (a : Type) -> (b : Type) -> a -> b -> And a b
+
+data Or : Type -> Type -> Type where
+  inL : (a : Type) -> (b : Type) -> a -> Or a b
+  inR : (a : Type) -> (b : Type) -> b -> Or a b
+
+pairSym : (a : Type) -> (b : Type) -> And a b -> And b a
+
+orSym : (a : Type) -> (b : Type) -> Or a b -> Or b a
+
 data Bot : Type where 
 
 data DU : Type -> Type -> Type where

@@ -37,8 +37,15 @@ filterJust [] = []
 filterJust (Nothing :: xs) = filterJust xs
 filterJust ((Just x) :: xs) = x :: filterJust xs
 
+export 
+maybeToBool : Maybe a -> Bool
+maybeToBool (Just _) = True
+maybeToBool _        = False
+
 data UFail : Type where
 data EFail : Type where
+
+
 export
 tryUnify : {vars : _} ->
            {auto c : Ref Ctxt Defs} -> 
@@ -56,16 +63,6 @@ tryUnify env a b
           then nothing 
           else pure $ Just (ures)
 
-showT : RawImp -> Core ()
-showT (IVar x) = log "var"
-showT (IPi x y argTy retTy) = do log "pi(" ; showT argTy ; log ")" ; showT retTy
-showT (ILam x y argTy scope) = do log "lam(" ; showT argTy ; log ")" ; showT scope
-showT (IPatvar x ty scope) = do log "pat(" ; showT ty ; log ")" ; showT scope
-showT (IApp x y) = do log "app(" ; showT x ; log ") to (" ; showT y ; log ")"
-showT (IHole x) = log "hole"
-showT Implicit = log "implicit"
-showT IType = log "ty"
-
 export
 filterCheckable : {auto c : Ref Ctxt Defs} -> 
                   {auto u : Ref UST UState} ->
@@ -81,6 +78,7 @@ filterCheckable ((x, b) :: xs) =
         then filterCheckable xs
         else pure ((tm, gd, x, b) :: !(filterCheckable xs))
 
+                  
 export
 fillMetas : {vars : _} -> 
             {auto c : Ref Ctxt Defs} ->

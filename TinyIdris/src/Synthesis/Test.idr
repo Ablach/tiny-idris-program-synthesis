@@ -1,3 +1,13 @@
+{-
+Module: Synthesis.Test
+Author: Scott Mora
+Last Modified: 28.01.2021
+Synthesis: This module provides functionallity 
+for testing the program synthesis tool. Outlines 
+how to run an individual test, along with running 
+multiple. 
+-}
+
 module Synthesis.Test
 
 import Synthesis.Synthesise
@@ -11,7 +21,11 @@ import Data.SortedMap
 import Data.Strings
 import Data.List
 
-
+{-
+Data types representing an answer sheet and 
+functionallity to lookup the answer of a 
+given name.
+-}
 export
 Sheet : Type
 Sheet = SortedMap String String
@@ -23,6 +37,15 @@ lookupAnswer : {auto a : Ref Answers Sheet} ->
                String -> Core (Maybe String)
 lookupAnswer s = pure $ (SortedMap.lookup s !(get Answers))
 
+
+{-
+Given the name of a test file that is currently loaded, 
+locate and parse the answer file. 
+
+Answer files are of the form: 
+
+<name> ! <answer>
+-}
 export 
 getAnswerFile : String -> String
 getAnswerFile fname 
@@ -39,6 +62,15 @@ parseAnswers ans = do Right parsed <- readFile ans
                                (trim a , trim b'))
                        (lines parsed)
 
+
+{-
+test: Tests can only be performed on individual
+terms, test looks up the definition, if it is 
+a metavariable, run the tool and test the 
+generating a printout and returning 1 for success or 
+0 for a fail. The nat returned will be used when 
+running multiple tests.
+-}
 test : {auto c : Ref Ctxt Defs} ->
        {auto u : Ref UST UState} ->
        {auto a : Ref Answers Sheet} ->
@@ -61,6 +93,11 @@ test ((UN n),d)
        if test then pure 1 else pure 0
 test (_,d) = pure 0
 
+{-
+testOne: Run an individual test, the number
+returned is ignored, since the printout is 
+the desired output.
+-}
 export 
 testOne : {auto c : Ref Ctxt Defs} ->
           {auto u : Ref UST UState} -> 
@@ -73,6 +110,10 @@ testOne n =
      test (n, def)
      pure ()
 
+{-
+runTests: Run multiple tests at once, summing 
+the results.
+-}
 export
 runTests : {auto c : Ref Ctxt Defs} ->
            {auto u : Ref UST UState} -> 

@@ -1,3 +1,5 @@
+{-This file contains modifications by Scott Mora on line 18-}
+
 module TTImp.TTImp
 
 import Core.TT

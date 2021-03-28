@@ -1,3 +1,12 @@
+{-
+Module: Synthesis.Util
+Author: Scott Mora
+Last Modified: 21.03.2021
+Summary: Provides various utitlity 
+functions used within searching and 
+case splitting. 
+-}
+
 module Synthesis.Util
 
 import Core.Core
@@ -14,11 +23,10 @@ import TTImp.TTImp
 
 import Synthesis.Resugar
 
-export
-repeat : a -> Nat -> List a
-repeat _ Z = []
-repeat a (S k) = a :: repeat a k
-
+{-
+The following three definitions 
+exist purely to clean up the codebase.
+-}
 export
 nothing : Core (Maybe a)
 nothing = pure Nothing
@@ -31,21 +39,22 @@ export
 none : Core (List a)
 none = pure []
 
-export 
-filterJust : List (Maybe a) -> List a
-filterJust [] = []
-filterJust (Nothing :: xs) = filterJust xs
-filterJust ((Just x) :: xs) = x :: filterJust xs
-
-export 
-maybeToBool : Maybe a -> Bool
-maybeToBool (Just _) = True
-maybeToBool _        = False
+{-
+The following two datatypes are used
+for handling exceptions within the 
+remaining functions. 
+-}
 
 data UFail : Type where
 data EFail : Type where
 
 
+{-
+tryUnify: Attempt unification between 
+two terms, if unification throws an 
+exception handle it, returning nothing, 
+otherwise return the result. 
+-}
 export
 tryUnify : {vars : _} ->
            {auto c : Ref Ctxt Defs} -> 
@@ -63,10 +72,16 @@ tryUnify env a b
           then nothing 
           else pure $ Just (ures)
 
+
+{-
+filterCheckable: Attempt to type check a list of terms, 
+returning only those for which type checking succeeds.
+-}
 export
 filterCheckable : {auto c : Ref Ctxt Defs} -> 
                   {auto u : Ref UST UState} ->
-                  List (RawImp, List Name) -> Core (List (Term [], Glued [], RawImp, List Name))
+                  List (RawImp, List Name) ->
+                  Core (List (Term [], Glued [], RawImp, List Name))
 filterCheckable [] = pure []
 filterCheckable ((x, b) :: xs) =
   do newRef EFail False
@@ -78,7 +93,17 @@ filterCheckable ((x, b) :: xs) =
         then filterCheckable xs
         else pure ((tm, gd, x, b) :: !(filterCheckable xs))
 
-                  
+                 
+{-
+fillMetas: Given a value and a name, if the value is
+a binder that accepts arguments, generate a metavariable 
+for the argument and proceed to the end of the term, returning
+the result, and the list of metavariables generated. 
+
+Should be used with data constructors.
+
+Nil: a -> Vec Z a becomes (Vec Z a, a)
+-} 
 export
 fillMetas : {vars : _} -> 
             {auto c : Ref Ctxt Defs} ->

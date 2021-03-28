@@ -1,3 +1,11 @@
+{-
+
+This file contains code modification by Scott Mora. This includes:
+The addition of the final two error constructors, and their related
+show instances, the implmentation of the log function, for outputting 
+a string to the console.
+-}
+
 module Core.Core
 
 import Core.Env

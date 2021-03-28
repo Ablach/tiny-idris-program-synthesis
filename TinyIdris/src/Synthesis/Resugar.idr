@@ -1,3 +1,13 @@
+{-
+Module: Synthesis.Resugar
+Author: Scott Mora
+Last Modified: 28.03.2021
+Summary: Provides functionallity for
+resugaring RawImp terms back to TinyIdris
+syntax. Individual terms may be resugared,
+or full pattern matching definitions.
+-}
+
 module Synthesis.Resugar 
 
 import TTImp.TTImp
@@ -19,9 +29,13 @@ getFnArgs : RawImp -> (RawImp , List (RawImp))
 getFnArgs (IApp z w) = let (f , args) = getFnArgs z in (f , (w :: args))
 getFnArgs fn = (fn , [])
 
-
+{-
+Helper function have been generated to resugar patterns, lambdas, 
+pi's, and applications due to them being presented differently based
+on their position. To perform all of this the resugar function is 
+called, which uses the resugar' function to handle the helpers.
+-}
 mutual
-
 resugarLHS : Bool -> RawImp -> String
 resugarLHS False (IApp x a )
   = let (f , as) = getFnArgs (IApp x a) in 
@@ -88,32 +102,10 @@ resugar : RawImp -> String
 resugar (IApp x y) = resugarApp x y
 resugar tm = resugar' tm
 
-resugarArgs : {args :_} -> {auto c : Ref Ctxt Defs} -> List (CaseAlt args) -> String
-resugarArgs [] = ""
-resugarArgs ((ConCase x tag ys y) :: xs)
- = "(" ++ (show x) ++ " " ++ (concat $ intersperse " " $ map show ys) ++ 
-   ") => " ++ (resugarCT y) ++ "\n  " ++ resugarArgs xs
-resugarArgs ((DefaultCase x) :: xs) = "defcase"
-
-
-resugarCT : {args : _} -> {auto c : Ref Ctxt Defs} -> CaseTree args -> String
-resugarCT (Case idx p scTy xs) 
-  = ?dsa "case " ++ (resugar $ unelab scTy) ++ " of \n" ++ "  " ++ (resugarArgs xs)
-resugarCT (STerm x) = (show x)
-resugarCT (Unmatched msg) = "unmached"
-resugarCT Impossible = "impossible case"
-
-export
-resugarDef : {auto c : Ref Ctxt Defs} -> Def -> String
-resugarDef None = "No Definition"
-resugarDef (PMDef args ct) = resugarCT ct
-resugarDef (DCon tag arity) = "datacon"
-resugarDef (TCon tag arity datacons) = "typeCon"
-resugarDef Hole = "hole"
-resugarDef (MetaVar vars x retTy) = "meta"
-resugarDef (Guess guess constraints) = "guess"
-
-
+{-
+Resugaring definitions consists of resugaring the type signature, followed by
+each clause, and combining the results.
+-}
 resugarClauses : {auto c : Ref Ctxt Defs} -> List (Clause, RawImp, RawImp) -> String
 resugarClauses [] = ""
 resugarClauses ((_, (l, r)) :: xs) 

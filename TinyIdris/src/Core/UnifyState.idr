@@ -1,3 +1,10 @@
+{-
+This file contains modifications by Scott Mora,
+extending the unification state with userholes, 
+functions and types, along with the code from which 
+they are referenced.
+-}
+
 module Core.UnifyState
 
 import Core.Context

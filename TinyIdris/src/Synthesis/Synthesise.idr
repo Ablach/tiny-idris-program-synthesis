@@ -1,3 +1,13 @@
+{-
+Module: Synthesis.Synthesise
+Author: Scott Mora
+Last Modified: 27.03.2021
+Summary: Provides functionallity for synthesising
+terms or pattern matching definitions given the
+name of a hole or type signature. Returns a string
+with the result in TinyIdris syntax, or an error message.
+-}
+
 module Synthesis.Synthesise
 
 import Core.CaseBuilder
@@ -28,13 +38,18 @@ import Data.Maybe
 import Data.Either
 import Data.SortedMap
 
+-- Declared at the top to be used throughout the file.
 synthesise : {vars : _} -> 
              {auto c : Ref Ctxt Defs} -> 
              {auto u : Ref UST UState} ->
              Search vars -> Core (List (Term vars))
 
-
-
+{-
+getSearchData: Given a term, if it is a binder to a
+pattern variable , extend the environment with the
+term and return the scope. Used to make a serch for
+a given left hand side.
+-}
 getSearchData : {ns : _} -> 
                 {auto c : Ref Ctxt Defs} ->
                 {auto u : Ref UST UState} ->
@@ -44,6 +59,10 @@ getSearchData (Bind x (PVTy y) scope) env ri
   = getSearchData scope (PVar x y :: env) ri
 getSearchData tm env ri = (ns ** (env , tm, ri))
 
+{-
+getClause: Given a term, updated left hand side and 
+a result, combine into a clause.
+-}
 getClause : {vars : _} -> 
             {auto c : Ref Ctxt Defs} ->
             {auto u : Ref UST UState} ->
@@ -51,7 +70,7 @@ getClause : {vars : _} ->
             -- search contains the env and the overall type, 
             -- the term is the rhs
             -- we can't use get args here since we may have altered
-            -- then environmente
+            -- them in the environment
             Core (Clause, RawImp, RawImp)
 getClause ((MkSearch depth name env lhs target), rt, lt) 
   = do let tm = getLhs lt
@@ -64,6 +83,14 @@ getClause ((MkSearch depth name env lhs target), rt, lt)
   getLhs tm = tm
 
 
+
+{-
+tryIfSuccessful: Given a value which requires an argument 
+to be synthesised, perform synthesis and branch out, 
+continuing the search for the resulting value. Returns 
+a list of arguments to which the name of the function may 
+be applied.
+-}
 tryIfSuccessful : {vars :_} ->
                   {auto c : Ref Ctxt Defs} ->
                   {auto u : Ref UST UState} ->
@@ -106,7 +133,12 @@ tryIfSuccessful (MkSearch depth name env lhs target) n nty tm
                           (Just (MkIsDefined p)) => pure $ [Local _ p]
             _ => pure $ [Ref nty n]
 
-
+{-
+structuralRecursionCheck : A conservative test, checking that terms must 
+be structurally smaller than those on the left hand side. Probably too 
+conservative, and should be replaced with one which performs normalisation
+to reduce the number of false negatives. 
+-}
 structuralRecursionCheck : {vars :_} ->
                            {auto c : Ref Ctxt Defs} ->
                            {auto u : Ref UST UState} ->
@@ -148,7 +180,11 @@ structuralRecursionCheck env lhs rhs
        checkArgs ls [] = False
 
 
-
+{-
+tryDef: Attempt to synthesise a term from a given definition, 
+check if the terms are unifiable, if so attempt to synthesise
+arguments.         
+-}
 tryDef : {vars : _} ->
          {auto c : Ref Ctxt Defs} -> 
          {auto u : Ref UST UState} ->
@@ -164,7 +200,16 @@ tryDef s@(MkSearch depth name env lhs target) n nty tm
         | _ => none     
       tryIfSuccessful s n nty norm
 
-      
+{-
+tryLocals: Given a list of local variables, attempt 
+unification with the target terms, if it fails, 
+check if it references a function type which results 
+in the correct definition.         
+
+If the depth of the search is zero, skip the step of 
+checking for functions, as this recursively results in 
+synthesising arguments.
+-}      
 tryLocals : {vars : _} -> 
             {auto c : Ref Ctxt Defs} -> 
             {auto u : Ref UST UState} ->
@@ -195,7 +240,21 @@ tryLocals s@(MkSearch Z name env lhs target) (l@(Local idx p) :: usable)
         _ => tryLocals s usable
 tryLocals _ _ = none
 
+{-
+synthesise: Declared at the top of the file, given a term, attempt to 
+synthesise a definition for it, if the depth is zero only do this by 
+checking which arguments have been passed in.
 
+If the term is a pi binder, construct a lambda term, if the term is a 
+type, use only those present in the local environment, otherwise 
+if it is an application of a type constructor to zero or more arguments, 
+attempt to use local variables, followed by data constructors, then 
+function definitions.
+
+Results can be ordered using functionallity defined in Synthesis.Order, 
+currently this is not done, at it resulted in no performance increase.
+
+-}
 synthesise s@(MkSearch depth name env lhs (Bind n (Pi n' pinfo tm) scope)) 
  = pure $ !(tryLocals s (getUsableEnv [] env)) ++ (map (Bind n (Lam n' pinfo tm))
               !(synthesise (MkSearch depth n (Lam n' pinfo tm :: env) lhs scope)))
@@ -223,6 +282,12 @@ synthesise s@(MkSearch (S k) name env lhs tm)
       let fs = concat $ !(traverse (\ (fn, ft) => tryDef s fn Func ft) $ funcs)
       pure $ (locals ++ cons ++ fs)
 
+
+{-
+synthesiseWorlds: Given a list of worlds, attempt synthesis
+for each, if synthesis is successful continue, returning the 
+resulting clause, otherwise break.
+-}
 synthesiseWorlds : {auto c : Ref Ctxt Defs} -> 
                    {auto u : Ref UST UState} -> 
                    Name ->
@@ -237,7 +302,10 @@ synthesiseWorlds n ((vars ** (env, tm, ri)) :: xs)
       clause <- getClause (s, t', ri)
       pure $ Just (clause :: rest)
 
-
+{-
+containsBaseCase: A straightforward check to ensure that at least 
+one term from a given list is nor a recursive call.
+-}
 containsBaseCase : List RawImp -> Name -> Core Bool
 containsBaseCase [] n = pure False
 containsBaseCase ((IApp x y) :: xs) n = if n == !(headName x)
@@ -249,6 +317,11 @@ containsBaseCase ((IApp x y) :: xs) n = if n == !(headName x)
         headName _ = throw (GenericMsg "Invalid expression at head of synthesised term")
 containsBaseCase _ _ = pure True
 
+{-
+synthesisePM: Given a list of worlds, synthesise clauses for each
+if this succeeds combine the clauses into a pattern matching 
+definition, returning the result, otherwise fail.
+-}
 synthesisePM : {auto c : Ref Ctxt Defs} -> 
                {auto u : Ref UST UState} ->
                Name -> Term []->
@@ -260,7 +333,10 @@ synthesisePM n ty ss
        (as ** ct) <- getPMDef n ty $ map (\ (a,_,_) => a) clauses
        pure $ Just (PMDef as ct, clauses)
 
-
+{-
+getLhs: Given a type signature, generate an intial left hand side for the 
+clause, containing no case splitting.
+-}
 getLhs : {vars :_} -> {auto c : Ref Ctxt Defs} -> Term vars -> Name -> List RawImp -> RawImp 
 getLhs (Bind x (Pi m pinfo tm) scope) n ls 
   = let tm' = unelab tm
@@ -268,6 +344,11 @@ getLhs (Bind x (Pi m pinfo tm) scope) n ls
          IPatvar x tm' sc
 getLhs tm n ls = apply (IVar n) (reverse ls)
 
+{-
+defSearch: Attempt to synthesise a pattern matching definition by repeatedly
+splitting clauses until every valid clause has a synthesisable term, or 
+no more splits are possible.
+-}
 defSearch : {auto c : Ref Ctxt Defs} ->
         {auto u : Ref UST UState} -> 
         GlobalDef -> Name -> List RawImp -> Nat ->
@@ -283,7 +364,12 @@ defSearch def n lhs splits =
       | _ => defSearch def n (map (\ (_,_,ri,_) => ri) gs) (S splits) 
      pure $ Just res
 
-
+{-
+The main interaction point, given a name, check it's definition 
+within the context and attempt synthesis. If this succeeds, unelabourate 
+and resugar the resulting term into TinyIdris synatx, otherwise 
+return an error.
+-}
 public export
 run : {auto c : Ref Ctxt Defs} -> 
       {auto u : Ref UST UState} ->

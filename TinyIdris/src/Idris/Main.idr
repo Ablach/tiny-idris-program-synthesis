@@ -1,3 +1,9 @@
+{-
+This file contains modification by Scott Mora, in the sections
+relating to the parsing of answer files, running the auto command, 
+and running the testing commands only.
+-}
+
 module Idris.Main 
 import Core.Context
 import Core.Core

@@ -1,3 +1,16 @@
+{-
+This file contains modifications by Scott Mora, these include: 
+
+Def type has been extended with the MetaVar constructor, 
+all code referencing this constructor are modifications.
+
+The TCon constructor has also been altered, along with referencing 
+code.
+
+From lines 117 onwards, functionallity has been added for the 
+traversal of the context.
+-}
+
 module Core.Context
 
 import Core.CaseTree

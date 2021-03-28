@@ -1,3 +1,8 @@
+{-
+This file contains modifications by Scott Mora, implementing 
+the functionallity of unifying binders.
+-}
+
 module Core.Unify
 
 import Core.CaseTree

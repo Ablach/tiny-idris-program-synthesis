@@ -1,3 +1,11 @@
+{-
+Module: Synthesis.Unelab
+Author: Scott Mora
+Last Modified: 23.03.2021
+Summary: A simple conversion of 
+TT terms back to RawImp.
+-}
+
 module Synthesis.Unelab 
 
 import TTImp.TTImp

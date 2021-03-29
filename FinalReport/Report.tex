@@ -1641,10 +1641,10 @@ moves on to the next definition to be attempted. If at this stage unification
 produces constraints then synthesis is continued, as it would be expected that
 constraints would be placed on each of the meta-variables. A potential optimisation of
 the system would use this information to search more efficiently, such as the \textit{I-Refinement}
-rules found in the Myth system, however the current implementation of unification in 
-TinyIdris does not provide a sufficient level of information about meta-variables for this to
-be of use, since constraints of the form \texttt{(meta-variable = term}) are not generated, instead
-no constraints are placed directly on meta-variables.
+rules found in the Myth system. Unification returns constraints only on the return types, therefore 
+constraints of the form \texttt{(meta-variable = term)} are not typically generated. Potential enhancements
+could use information about which arguments are present within the return type of constructors to identify
+these constraints, or make use of SAT solvers as seen in previous systems. 
 
 When synthesising arguments, it is possible that arguments deeper into the binder
 may depend on arguments that have been previously passed in, in Cons, the argument \texttt{x}

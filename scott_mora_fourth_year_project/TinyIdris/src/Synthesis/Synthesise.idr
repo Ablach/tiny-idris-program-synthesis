@@ -391,15 +391,8 @@ run n = do Just def <- lookupDef n !(get Ctxt)
                                   (structuralRecursionCheck env lhs)
                                   rs
                     | _ => pure "No match" 
-                   (r'' :: rs'') <- filterM (\ t => case !(tryUnify env t retTy) of
-                                                      Just ures =>
-                                                       case constraints ures of
-                                                            [] => pure True
-                                                            _  => pure False
-                                                      Nothing => pure False) (r :: rs')
-                        | _ => pure "No Match"
                    -- here we want to add in some heuristic for sorting
-                   pure $ resugar $ unelab r''
+                   pure $ resugar $ unelab r
                _ => pure "Invalid definition"
 
 

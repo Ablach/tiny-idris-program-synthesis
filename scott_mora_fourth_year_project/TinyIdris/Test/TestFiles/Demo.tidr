@@ -29,6 +29,7 @@ pat a : Type, b : Type, f : (a -> b) =>
 pat a : Type, b : Type, n : Nat, f : (a -> b), x : a, xs : Vec n a =>
    map a b (S n) f (Cons a n x xs) = ?v04
 
+
 replicate : (a : _) -> (x : a) -> (n : Nat) -> Vec n a
 pat a : Type, x : a => 
    replicate a x Z = ?v05
